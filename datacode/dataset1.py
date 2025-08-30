@@ -5,11 +5,7 @@ import numpy as np
 import os
 import random
 from datetime import datetime, timedelta
-from sklearn.metrics.pairwise import cosine_similarity
-from surprise import Dataset, Reader, SVD
-from surprise.model_selection import train_test_split
-from surprise import accuracy
-import re
+
 
 path = r"C:\Users\kanis\OneDrive\Desktop\KANISHKA\PROJECT\orphnage\data\dataset1"
 os.makedirs(path, exist_ok=True)
