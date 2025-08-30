@@ -11,7 +11,8 @@ import NGODetail from "./pages/NGODetail";
 import Payment from "./pages/Payment";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
-
+import MyImpact from "./pages/MyImpact";
+import SupportCauses from "./pages/SupportCauses";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -25,8 +26,8 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           
           {/* ADDED a placeholder for your missing routes */}
-          <Route path="/causes" element={<div>Find Causes Page</div>} />
-          <Route path="/impact" element={<div>My Impact Page</div>} />
+          <Route path="/causes" element={<SupportCauses />} />
+          <Route path="/impact" element={<MyImpact />} />
           <Route path="/events" element={<div>Events Page</div>} />
 
           <Route path="/ngo/:id" element={<NGODetail />} />

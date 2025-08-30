@@ -126,7 +126,7 @@ export default function Payment() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="cvc">CVC</Label>
+                      <Label htmlFor="cvc">CVV</Label>
                       <Input
                         id="cvc"
                         value={formData.cvc}
