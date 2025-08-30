@@ -5,6 +5,7 @@ import { FeatureCard } from "@/components/FeatureCard";
 import { Navigation } from "@/components/Navigation";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-community.jpg";
+import signup from "@/pages/Signup"
 
 export default function Landing() {
   return (
@@ -31,7 +32,7 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{animationDelay: '0.4s'}}>
             <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
-              <Link to="/dashboard">I'm a Donor</Link>
+              <Link to="/signup">I'm a Donor</Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white hover:text-primary">
               <Link to="/ngo-register">I'm an NGO</Link>
@@ -152,7 +153,7 @@ export default function Landing() {
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Join today and make your impact.</h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
-              <Link to="/dashboard">Sign Up as Donor</Link>
+              <Link to="/Signup">Sign Up as Donor</Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white hover:text-primary">
               <Link to="/ngo-register">Sign Up as NGO</Link>

@@ -4,22 +4,7 @@ import { Navigation } from "@/components/Navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Heart, Users, Clock, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const monthlyData = [
-  { month: 'Aug', amount: 1200 },
-  { month: 'Sep', amount: 800 },
-  { month: 'Oct', amount: 2100 },
-  { month: 'Nov', amount: 1500 },
-  { month: 'Dec', amount: 1900 },
-  { month: 'Jan', amount: 2300 },
-];
-
-const categoryData = [
-  { name: 'Education', value: 40, color: '#1f77b4' },
-  { name: 'Healthcare', value: 30, color: '#ff7f0e' },
-  { name: 'Food', value: 20, color: '#2ca02c' },
-  { name: 'Shelter', value: 10, color: '#d62728' },
-];
+import { useEffect, useState } from "react";
 
 const featuredCauses = [
   {
@@ -46,6 +31,37 @@ const featuredCauses = [
 ];
 
 export default function Dashboard() {
+  const [username, setUsername] = useState("User");
+  const [donations, setDonations] = useState(0);
+  const [hours, setHours] = useState(0);
+  const [causes, setCauses] = useState<string[]>([]);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        if (userData.username) setUsername(userData.username);
+
+        // Fetch dashboard stats
+        fetch(`http://localhost:5000/dashboard/${userData.id}`)
+          .then((res) => res.json())
+          .then((data) => {
+            setDonations(data.total_donations || 0);
+            setHours(data.total_hours || 0);
+            setCauses(data.causes || []);
+            setMonthlyData(data.monthly || []);  // if backend provides monthly trend
+            setCategoryData(data.categories || []); // if backend provides categories
+          })
+          .catch((err) => console.error("Error fetching dashboard:", err));
+      } catch (err) {
+        console.error("Error parsing user from localStorage", err);
+      }
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation variant="dashboard" />
@@ -53,7 +69,7 @@ export default function Dashboard() {
       <main className="container mx-auto p-6">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, Jane!</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, {username}!</h1>
           <p className="text-muted-foreground">Here's your impact summary and new opportunities to help.</p>
         </div>
 
@@ -65,8 +81,8 @@ export default function Dashboard() {
               <Heart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">₹1,480.00</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <div className="text-2xl font-bold text-primary">₹{donations}</div>
+              <p className="text-xs text-muted-foreground">Your lifetime contributions</p>
             </CardContent>
           </Card>
 
@@ -76,8 +92,8 @@ export default function Dashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">8</div>
-              <p className="text-xs text-muted-foreground">Across 4 categories</p>
+              <div className="text-2xl font-bold text-primary">{causes.length}</div>
+              <p className="text-xs text-muted-foreground">{causes.join(", ") || "No causes yet"}</p>
             </CardContent>
           </Card>
 
@@ -87,7 +103,7 @@ export default function Dashboard() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">32 Hours</div>
+              <div className="text-2xl font-bold text-primary">{hours} Hours</div>
               <p className="text-xs text-muted-foreground">This quarter</p>
             </CardContent>
           </Card>
@@ -104,7 +120,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData}>
+                <BarChart data={monthlyData.length ? monthlyData : [{month:"-", amount:0}]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
@@ -123,7 +139,7 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={categoryData}
+                    data={categoryData.length ? categoryData : [{name:"None", value:100, color:"#ccc"}]}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -132,7 +148,7 @@ export default function Dashboard() {
                     fill="hsl(var(--primary))"
                   >
                     {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={`cell-${index}`} fill={entry.color || "#8884d8"} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
