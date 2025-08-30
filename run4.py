@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score, classification_report
 import matplotlib.pyplot as plt
 
 
-file_path = file_path = r"C:\Users\kanis\OneDrive\Desktop\KANISHKA\PROJECT\orphange\data\dataset4\orphanage_children_urgency.csv"
+file_path = file_path = r"C:\Users\kanis\OneDrive\Desktop\KANISHKA\PROJECT\orphange\data\dataset3\orphanage_children_urgency.csv"
 df = pd.read_csv(file_path)
 X = df[['need_type','amount_required','percent_funded','num_sponsors','last_updated_days']]
 y = df['criticality_label']
