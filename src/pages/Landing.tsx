@@ -34,8 +34,8 @@ export default function Landing() {
             <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
               <Link to="/signup">I'm a Donor</Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white hover:text-primary">
-              <Link to="/ngo-register">I'm an NGO</Link>
+            <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
+              <Link to="/ngo-register">I'm a NGO</Link>
             </Button>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function Landing() {
             <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
               <Link to="/Signup">Sign Up as Donor</Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white hover:text-primary">
+            <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
               <Link to="/ngo-register">Sign Up as NGO</Link>
             </Button>
           </div>

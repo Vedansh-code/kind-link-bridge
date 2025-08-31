@@ -1,4 +1,5 @@
-import { useState } from "react";
+import axios from "axios";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,14 +18,45 @@ export default function Payment() {
     expiryDate: "",
     cvc: ""
   });
+  const [userId, setUserId] = useState<number | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowModal(true);
-  };
+  // Fetch userId from localStorage on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
+      setUserId(parsed.id);
+    }
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!userId) {
+      alert("User not logged in");
+      return;
+    }
+
+    // Extract numeric value from string like "₹1,000"
+    const numericAmount = Number(formData.amount.replace(/[^0-9.]/g, ""));
+
+    try {
+      // Send donation to backend
+      await axios.post("http://localhost:5000/donations", {
+        user_id: userId,
+        amount: numericAmount
+      });
+
+      // Show success modal
+      setShowModal(true);
+    } catch (err) {
+      console.error(err);
+      alert("Payment failed. Please try again.");
+    }
   };
 
   const handleCloseModal = () => {
@@ -43,22 +75,18 @@ export default function Payment() {
   return (
     <div className="min-h-screen bg-background">
       <div className="grid lg:grid-cols-2 min-h-screen">
-        {/* Left Panel - Information */}
+        {/* Left Panel */}
         <div className="bg-primary text-primary-foreground p-8 lg:p-12 flex items-center justify-center">
           <div className="max-w-md text-center">
-            <div className="mb-6">
-              <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-90" />
-            </div>
+            <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-90" />
             <h1 className="text-3xl font-bold mb-4">Support Children's Education</h1>
             <p className="text-lg opacity-90 leading-relaxed">
-              Your generous donation will directly impact children's lives by providing them with 
-              the educational resources they need to build a brighter future. Every contribution 
-              makes a meaningful difference in their journey toward success.
+              Your generous donation will directly impact children's lives...
             </p>
           </div>
         </div>
 
-        {/* Right Panel - Payment Form */}
+        {/* Right Panel */}
         <div className="bg-muted/50 p-8 lg:p-12 flex items-center justify-center">
           <Card className="w-full max-w-md shadow-lg">
             <CardHeader>
@@ -100,41 +128,31 @@ export default function Payment() {
                   />
                 </div>
 
+                {/* Payment Credentials */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-foreground">Payment Credentials</h3>
-                  
-                  <div>
-                    <Label htmlFor="cardNumber">Card Number</Label>
+                  <Input
+                    id="cardNumber"
+                    value={formData.cardNumber}
+                    onChange={(e) => handleInputChange("cardNumber", e.target.value)}
+                    placeholder="1234 5678 9012 3456"
+                    required
+                  />
+                  <div className="grid grid-cols-2 gap-4">
                     <Input
-                      id="cardNumber"
-                      value={formData.cardNumber}
-                      onChange={(e) => handleInputChange("cardNumber", e.target.value)}
-                      placeholder="1234 5678 9012 3456"
+                      id="expiryDate"
+                      value={formData.expiryDate}
+                      onChange={(e) => handleInputChange("expiryDate", e.target.value)}
+                      placeholder="MM / YY"
                       required
                     />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="expiryDate">Expiry Date</Label>
-                      <Input
-                        id="expiryDate"
-                        value={formData.expiryDate}
-                        onChange={(e) => handleInputChange("expiryDate", e.target.value)}
-                        placeholder="MM / YY"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cvc">CVC</Label>
-                      <Input
-                        id="cvc"
-                        value={formData.cvc}
-                        onChange={(e) => handleInputChange("cvc", e.target.value)}
-                        placeholder="123"
-                        required
-                      />
-                    </div>
+                    <Input
+                      id="cvc"
+                      value={formData.cvc}
+                      onChange={(e) => handleInputChange("cvc", e.target.value)}
+                      placeholder="123"
+                      required
+                    />
                   </div>
                 </div>
 

@@ -5,6 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Heart, Users, Clock, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import axios from "axios";
+import { io, Socket } from "socket.io-client";
 
 const featuredCauses = [
   {
@@ -37,29 +39,43 @@ export default function Dashboard() {
   const [causes, setCauses] = useState<string[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+
+  const fetchDashboard = async (id: number) => {
+    try {
+      const res = await axios.get(`http://localhost:5000/dashboard/${id}`);
+      setDonations(res.data.total_donations || 0);
+      setHours(res.data.total_hours || 0);
+      setCauses(res.data.causes || []);
+      setMonthlyData(res.data.monthly || []);  
+      setCategoryData(res.data.categories || []); 
+    } catch (err) {
+      console.error("Error fetching dashboard:", err);
+    }
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        if (userData.username) setUsername(userData.username);
+    if (!storedUser) return;
 
-        // Fetch dashboard stats
-        fetch(`http://localhost:5000/dashboard/${userData.id}`)
-          .then((res) => res.json())
-          .then((data) => {
-            setDonations(data.total_donations || 0);
-            setHours(data.total_hours || 0);
-            setCauses(data.causes || []);
-            setMonthlyData(data.monthly || []);  // if backend provides monthly trend
-            setCategoryData(data.categories || []); // if backend provides categories
-          })
-          .catch((err) => console.error("Error fetching dashboard:", err));
-      } catch (err) {
-        console.error("Error parsing user from localStorage", err);
-      }
-    }
+    const userData = JSON.parse(storedUser);
+    setUserId(userData.id);
+    if (userData.username) setUsername(userData.username);
+    fetchDashboard(userData.id);
+
+    // Initialize Socket.io client
+    const newSocket = io("http://localhost:5000");
+    setSocket(newSocket);
+
+    // Listen for donation updates
+    newSocket.on(`donation-update-${userData.id}`, () => {
+      fetchDashboard(userData.id);
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
   }, []);
 
   return (
