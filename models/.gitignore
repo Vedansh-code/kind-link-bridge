@@ -1,2 +1,13 @@
 venv*/
 *.venv/
+all_items.pkl
+entity_type_encoder.pkl
+fraud_fake_ngo_orphanage_model.pkl
+fraud_fake_ngo_orphanage_scaler.pkl 
+orphanage_children_urgency_model.pkl
+interactions.pkl
+item_cosine_sim.pkl
+svd_model.pkl
+
+*.pyc
+__pycache__/    

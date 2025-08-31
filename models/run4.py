@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, export_text, plot_tree
 from sklearn.metrics import accuracy_score, classification_report
-import matplotlib.pyplot as plt
+import joblib
 
 
 file_path = file_path = r"C:\Users\kanis\OneDrive\Desktop\KANISHKA\PROJECT\orphnage\data\dataset3\orphanage_children_urgency.csv"
@@ -27,3 +27,5 @@ y_pred = model.predict(X_test)
 # Evaluation
 print("Accuracy:", accuracy_score(y_test, y_pred))
 print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+joblib.dump(model, 'orphanage_children_urgency_model.pkl')

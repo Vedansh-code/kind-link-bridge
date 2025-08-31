@@ -6,8 +6,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-import matplotlib.pyplot as plt
-import seaborn as sns
+import joblib
+
 
 
 folder_path = r"C:\Users\kanis\OneDrive\Desktop\KANISHKA\PROJECT\orphnage\data\dataset2"
@@ -42,6 +42,6 @@ print("Accuracy:", accuracy_score(y_test, y_pred))
 print("\nConfusion Matrix:\n", confusion_matrix(y_test, y_pred))
 print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
-
-
-
+joblib.dump(model, 'fraud_fake_ngo_orphanage_model.pkl')
+joblib.dump(scaler, 'fraud_fake_ngo_orphanage_scaler.pkl')
+joblib.dump(le, 'entity_type_encoder.pkl')
