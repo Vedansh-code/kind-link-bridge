@@ -8,6 +8,9 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { io, Socket } from "socket.io-client";
 
+// 🔑 API Base URL (local vs deployed)
+const API_BASE_URL = "https://kind-link-bridge-backend-1.onrender.com";
+
 const featuredCauses = [
   {
     id: 1,
@@ -44,12 +47,12 @@ export default function Dashboard() {
 
   const fetchDashboard = async (id: number) => {
     try {
-      const res = await axios.get(`http://localhost:5000/dashboard/${id}`);
+      const res = await axios.get(`${API_BASE_URL}/dashboard/${id}`);
       setDonations(res.data.total_donations || 0);
       setHours(res.data.total_hours || 0);
       setCauses(res.data.causes || []);
-      setMonthlyData(res.data.monthly || []);  
-      setCategoryData(res.data.categories || []); 
+      setMonthlyData(res.data.monthly || []);
+      setCategoryData(res.data.categories || []);
     } catch (err) {
       console.error("Error fetching dashboard:", err);
     }
@@ -65,7 +68,7 @@ export default function Dashboard() {
     fetchDashboard(userData.id);
 
     // Initialize Socket.io client
-    const newSocket = io("http://localhost:5000");
+    const newSocket = io(API_BASE_URL);
     setSocket(newSocket);
 
     // Listen for donation updates

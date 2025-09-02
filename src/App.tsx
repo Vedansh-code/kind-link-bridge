@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import Impact from "@/pages/Impact";
 import Causes from "./pages/Causes";
 import Events from "./pages/Events";
+import Login from "./pages/Login";
 
 
 
@@ -29,6 +30,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           
           {/* ADDED a placeholder for your missing routes */}

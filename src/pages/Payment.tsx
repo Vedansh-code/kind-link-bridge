@@ -46,11 +46,10 @@ export default function Payment() {
 
     try {
       // Send donation to backend
-      await axios.post("http://localhost:5000/donations", {
-        user_id: userId,
-        amount: numericAmount
+      await axios.post("https://kind-link-bridge-backend-1.onrender.com/donations", {
+      user_id: userId,
+      amount: numericAmount
       });
-
       // Show success modal
       setShowModal(true);
     } catch (err) {

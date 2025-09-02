@@ -1,6 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navigation } from "@/components/Navigation";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import { Heart, Users, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -17,7 +28,7 @@ export default function Impact() {
       try {
         const userData = JSON.parse(storedUser);
 
-        fetch(`http://localhost:5000/dashboard/${userData.id}`)
+        fetch(`https://kind-link-bridge-backend-1.onrender.com/dashboard/${userData.id}`)
           .then((res) => res.json())
           .then((data) => {
             setDonations(data.total_donations || 0);
@@ -36,7 +47,6 @@ export default function Impact() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation variant="dashboard" />
-
 
       <main className="container mx-auto p-6">
         <h1 className="text-3xl font-bold mb-6 text-foreground">Your Impact</h1>
@@ -82,7 +92,7 @@ export default function Impact() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData.length ? monthlyData : [{month:"-", amount:0}]}>
+                <BarChart data={monthlyData.length ? monthlyData : [{ month: "-", amount: 0 }]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
@@ -101,7 +111,7 @@ export default function Impact() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={categoryData.length ? categoryData : [{name:"None", value:100, color:"#ccc"}]}
+                    data={categoryData.length ? categoryData : [{ name: "None", value: 100, color: "#ccc" }]}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"

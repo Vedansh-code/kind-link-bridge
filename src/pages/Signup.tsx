@@ -1,39 +1,38 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Signup: React.FC = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setMessage("");
 
     try {
-      const response = await fetch("http://localhost:5000/signup", {
+      const response = await fetch("https://kind-link-bridge-backend-1.onrender.com/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password }),
       });
 
       const data = await response.json();
       if (response.ok) {
-        // ✅ Save user details so Dashboard can read it
         localStorage.setItem("user", JSON.stringify(data));
-        navigate("/dashboard");
-
         setMessage("✅ Signup successful!");
-        // redirect to dashboard after signup
-        setTimeout(() => navigate("/dashboard"), 1000);
+        navigate("/dashboard");
       } else {
         setMessage(`❌ Error: ${data.error}`);
       }
     } catch (error) {
       setMessage("⚠️ Server not reachable");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,10 +73,19 @@ const Signup: React.FC = () => {
 
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+          className={`w-full py-2 rounded text-white ${
+            loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600"
+          }`}
+          disabled={loading}
         >
-          Sign Up
+          {loading ? "Signing up..." : "Sign Up"}
         </button>
+        
+        <center>
+          <Link to="/login" className="text-blue-500 hover:underline">
+            Already a User?
+          </Link>
+        </center>
       </form>
 
       {message && <p className="mt-4">{message}</p>}

@@ -1,30 +1,45 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false); // 🔹 new state
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true); // start loading
+    setMessage("");
 
     try {
-      const response = await fetch("http://localhost:5000/login", {
+      const response = await fetch("https://kind-link-bridge-backend-1.onrender.com/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        setMessage("⚠️ Unexpected server response");
+        setLoading(false);
+        return;
+      }
+
       if (response.ok) {
-        setMessage(`✅ Welcome ${data.username}!`);
+        localStorage.setItem("user", JSON.stringify(data));
+        setMessage("✅ Login successful!");
+        navigate("/dashboard");
       } else {
-        setMessage(`❌ Error: ${data.error}`);
+        setMessage(`❌ Error: ${data.error || "Login failed"}`);
       }
     } catch (error) {
       setMessage("⚠️ Server not reachable");
+    } finally {
+      setLoading(false); // stop loading in all cases
     }
   };
 
@@ -56,9 +71,12 @@ const Login: React.FC = () => {
 
         <button
           type="submit"
-          className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
+          className={`w-full py-2 rounded text-white ${
+            loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600"
+          }`}
+          disabled={loading} // 🔹 disable while loading
         >
-          Login
+          {loading ? "Logging in..." : "Login"} {/* 🔹 dynamic text */}
         </button>
       </form>
 
@@ -68,4 +86,3 @@ const Login: React.FC = () => {
 };
 
 export default Login;
-
