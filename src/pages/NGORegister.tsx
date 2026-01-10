@@ -21,12 +21,14 @@ import {
   Trash2, 
   CalendarIcon,
   ShieldCheck,
-  Heart
+  Heart,
+  CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+// ... [Schemas and Categories remain identical to your original code] ...
 const childSchema = z.object({
   name: z.string().min(1, "Name is required"),
   age: z.number().min(1, "Age must be at least 1").max(18, "Age must be 18 or less"),
@@ -49,9 +51,7 @@ const formSchema = z.object({
   schoolsConnected: z.number().min(0),
   hoursProvided: z.number().min(0),
 }).refine((data) => {
-  if (data.isVerified && !data.verificationDoc) {
-    return false;
-  }
+  if (data.isVerified && !data.verificationDoc) return false;
   return true;
 }, {
   message: "Verification document is required for verified organizations",
@@ -60,18 +60,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const categories = [
-  "Education",
-  "Healthcare",
-  "Environment",
-  "Child Welfare",
-  "Women Empowerment",
-  "Elderly Care",
-  "Disaster Relief",
-  "Animal Welfare",
-  "Rural Development",
-  "Other",
-];
+const categories = ["Education", "Healthcare", "Environment", "Child Welfare", "Women Empowerment", "Elderly Care", "Disaster Relief", "Animal Welfare", "Rural Development", "Other"];
 
 const NGORegister = () => {
   const navigate = useNavigate();
@@ -113,171 +102,171 @@ const NGORegister = () => {
     });
   };
 
-  const handleCancel = () => {
-    navigate("/");
-  };
+  const handleCancel = () => navigate("/");
 
   return (
-    <div className="min-h-screen gradient-hero py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary mb-4">
-            <Heart className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-2">
+        
+        {/* Header - White & Green Focus */}
+        <div className="text-center mb-12 animate-fade-in">
+          
+          <h1 className="text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
             NGO Registration
           </h1>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Join our network and help make a difference in children's lives
+          <p className="text-slate-500 max-w-md mx-auto text-lg">
+            Join our mission-driven network and empower the next generation.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Basic Info Section */}
-          <section className="form-section animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            <h2 className="form-section-title">
-              <Building2 className="w-5 h-5 text-primary" />
-              Basic Information
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="input-label">Name of Organization *</label>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          
+          {/* Basic Info Section - Isolated Card */}
+          <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in" style={{ animationDelay: "0.1s" }}>
+            <div className="bg-slate-50/50 border-b border-slate-200 px-6 py-4">
+              <h2 className="flex items-center gap-2 font-bold text-slate-800">
+                <Building2 className="w-5 h-5 text-emerald-600" />
+                Basic Information
+              </h2>
+            </div>
+            <div className="p-6 grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Name of Organization *</label>
                 <Input
                   {...register("orgName")}
-                  placeholder="Enter organization name"
-                  className={cn(errors.orgName && "border-destructive")}
+                  placeholder="e.g. Hope Foundation"
+                  className={cn("focus-visible:ring-emerald-500", errors.orgName && "border-red-500")}
                 />
-                {errors.orgName && (
-                  <p className="input-error">{errors.orgName.message}</p>
-                )}
+                {errors.orgName && <p className="text-xs text-red-500 font-medium">{errors.orgName.message}</p>}
               </div>
-              <div>
-                <label className="input-label">Tagline (Optional)</label>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Tagline (Optional)</label>
                 <Input
                   {...register("tagline")}
-                  placeholder="A short tagline for your NGO"
+                  placeholder="Empowering through action"
+                  className="focus-visible:ring-emerald-500"
                 />
               </div>
             </div>
           </section>
 
           {/* Verification Section */}
-          <section className="form-section animate-fade-in" style={{ animationDelay: "0.15s" }}>
-            <h2 className="form-section-title">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-              Verification Status
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                <div>
-                  <p className="font-medium text-foreground">Verified Organization</p>
-                  <p className="text-sm text-muted-foreground">
-                    Toggle if your NGO has official verification
-                  </p>
-                </div>
-                <Controller
-                  name="isVerified"
-                  control={control}
-                  render={({ field }) => (
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  )}
-                />
-              </div>
-
-              {isVerified && (
-                <div className="animate-slide-in">
-                  <label className="input-label">Verification Document *</label>
+          <section className="bg-white rounded-xl border border-slate-200 shadow-sm animate-fade-in" style={{ animationDelay: "0.15s" }}>
+            <div className="p-6">
+              <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-6">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                Verification Status
+              </h2>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-5 rounded-xl border border-emerald-100 bg-emerald-50/30">
+                  <div className="space-y-1">
+                    <p className="font-bold text-slate-900 flex items-center gap-2">
+                      Verified Organization {isVerified && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                    </p>
+                    <p className="text-sm text-slate-600">
+                      Does your NGO have official government-recognized status?
+                    </p>
+                  </div>
                   <Controller
-                    name="verificationDoc"
+                    name="isVerified"
                     control={control}
                     render={({ field }) => (
-                      <FileUpload
-                        onChange={field.onChange}
-                        value={field.value}
-                        error={errors.verificationDoc?.message as string}
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="data-[state=checked]:bg-emerald-600"
                       />
                     )}
                   />
                 </div>
-              )}
+
+                {isVerified && (
+                  <div className="animate-in slide-in-from-top-4 duration-300 space-y-3">
+                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                      Official Document Upload <span className="text-red-500">*</span>
+                    </label>
+                    <Controller
+                      name="verificationDoc"
+                      control={control}
+                      render={({ field }) => (
+                        <FileUpload
+                          onChange={field.onChange}
+                          value={field.value}
+                          error={errors.verificationDoc?.message as string}
+                        />
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </section>
 
-          {/* Location Section */}
-          <section className="form-section animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            <h2 className="form-section-title">
-              <MapPin className="w-5 h-5 text-primary" />
-              Location
-            </h2>
-            <div>
-              <label className="input-label">Office Address / City *</label>
-              <Input
-                {...register("officeAddress")}
-                placeholder="Enter your office address or city"
-                className={cn(errors.officeAddress && "border-destructive")}
-              />
-              {errors.officeAddress && (
-                <p className="input-error">{errors.officeAddress.message}</p>
-              )}
-            </div>
-          </section>
+          {/* About & Location Combined Grid */}
+          <div className="grid gap-8 sm:grid-cols-2">
+            <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-fade-in" style={{ animationDelay: "0.2s" }}>
+              <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-4">
+                <MapPin className="w-5 h-5 text-emerald-600" />
+                Main Location
+              </h2>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Office Address / City *</label>
+                <Input
+                  {...register("officeAddress")}
+                  placeholder="Enter full address"
+                  className={cn("focus-visible:ring-emerald-500", errors.officeAddress && "border-red-500")}
+                />
+                {errors.officeAddress && <p className="text-xs text-red-500">{errors.officeAddress.message}</p>}
+              </div>
+            </section>
 
-          {/* About Section */}
-          <section className="form-section animate-fade-in" style={{ animationDelay: "0.25s" }}>
-            <h2 className="form-section-title">
-              <Info className="w-5 h-5 text-primary" />
-              About Your Organization
-            </h2>
-            <div>
-              <label className="input-label">Description *</label>
-              <Textarea
-                {...register("about")}
-                placeholder="Tell us about your NGO, its mission, and the work you do..."
-                rows={4}
-                className={cn(errors.about && "border-destructive")}
-              />
-              {errors.about && (
-                <p className="input-error">{errors.about.message}</p>
-              )}
-            </div>
-          </section>
+            <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-fade-in" style={{ animationDelay: "0.25s" }}>
+              <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-4">
+                <Info className="w-5 h-5 text-emerald-600" />
+                Mission
+              </h2>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Description *</label>
+                <Textarea
+                  {...register("about")}
+                  placeholder="Explain your NGO's primary goals..."
+                  rows={2}
+                  className={cn("focus-visible:ring-emerald-500", errors.about && "border-red-500")}
+                />
+              </div>
+            </section>
+          </div>
 
-          {/* Children Section */}
-          <section className="form-section animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="form-section-title mb-0">
-                <Users className="w-5 h-5 text-primary" />
-                Children in Your Care
+          {/* Children Section - Cleaner List Style */}
+          <section className="bg-white rounded-xl border border-slate-200 shadow-sm animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 font-bold text-slate-800">
+                <Users className="w-5 h-5 text-emerald-600" />
+                Children in Care
               </h2>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => append({ name: "", age: 0, interests: "", currentNeeds: "" })}
-                className="gap-1"
+                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
               >
-                <Plus className="w-4 h-4" />
-                Add Child
+                <Plus className="w-4 h-4 mr-1" /> Add Child
               </Button>
             </div>
 
-            {errors.children?.root && (
-              <p className="input-error mb-4">{errors.children.root.message}</p>
-            )}
+            <div className="p-6 space-y-6">
+              {errors.children?.root && (
+                <div className="bg-red-50 border border-red-100 p-3 rounded-lg">
+                  <p className="text-sm text-red-600 font-medium">{errors.children.root.message}</p>
+                </div>
+              )}
 
-            <div className="space-y-4">
               {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="p-4 rounded-lg bg-muted/30 border border-border/50 animate-slide-in"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-primary">
-                      Child #{index + 1}
+                <div key={field.id} className="group relative p-5 rounded-xl border border-slate-100 bg-slate-50/40 hover:bg-white hover:border-emerald-200 transition-all duration-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] uppercase font-bold px-2 py-1 rounded">
+                      Profile #{index + 1}
                     </span>
                     {fields.length > 1 && (
                       <Button
@@ -285,214 +274,125 @@ const NGORegister = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => remove(index)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     )}
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="input-label">Name *</label>
-                      <Input
-                        {...register(`children.${index}.name`)}
-                        placeholder="Child's name"
-                        className={cn(errors.children?.[index]?.name && "border-destructive")}
-                      />
-                      {errors.children?.[index]?.name && (
-                        <p className="input-error">{errors.children[index].name?.message}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="input-label">Age *</label>
-                      <Input
-                        type="number"
-                        {...register(`children.${index}.age`, { valueAsNumber: true })}
-                        placeholder="Age"
-                        min={1}
-                        max={18}
-                        className={cn(errors.children?.[index]?.age && "border-destructive")}
-                      />
-                      {errors.children?.[index]?.age && (
-                        <p className="input-error">{errors.children[index].age?.message}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="input-label">Interests *</label>
-                      <Input
-                        {...register(`children.${index}.interests`)}
-                        placeholder="e.g., Reading, Sports, Art"
-                        className={cn(errors.children?.[index]?.interests && "border-destructive")}
-                      />
-                      {errors.children?.[index]?.interests && (
-                        <p className="input-error">{errors.children[index].interests?.message}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="input-label">Current Needs *</label>
-                      <Input
-                        {...register(`children.${index}.currentNeeds`)}
-                        placeholder="e.g., School supplies, Mentorship"
-                        className={cn(errors.children?.[index]?.currentNeeds && "border-destructive")}
-                      />
-                      {errors.children?.[index]?.currentNeeds && (
-                        <p className="input-error">{errors.children[index].currentNeeds?.message}</p>
-                      )}
-                    </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Input {...register(`children.${index}.name`)} placeholder="Child's Name" className="bg-white" />
+                    <Input type="number" {...register(`children.${index}.age`)} placeholder="Age" className="bg-white" />
+                    <Input {...register(`children.${index}.interests`)} placeholder="Interests" className="bg-white" />
+                    <Input {...register(`children.${index}.currentNeeds`)} placeholder="Primary Needs" className="bg-white" />
                   </div>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* Key Info Grid */}
-          <section className="form-section animate-fade-in" style={{ animationDelay: "0.35s" }}>
-            <h2 className="form-section-title">
-              <Grid3X3 className="w-5 h-5 text-primary" />
-              Key Information
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <label className="input-label">Category *</label>
-                <Controller
-                  name="category"
-                  control={control}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className={cn(errors.category && "border-destructive")}>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.category && (
-                  <p className="input-error">{errors.category.message}</p>
-                )}
-              </div>
+          {/* Key Info & Impact Grid */}
+          <div className="space-y-8">
+            <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-6">
+                <Grid3X3 className="w-5 h-5 text-emerald-600" />
+                Organizational Details
+              </h2>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Category *</label>
+                  <Controller
+                    name="category"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="focus:ring-emerald-500">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
 
-              <div>
-                <label className="input-label">Locations *</label>
-                <Input
-                  {...register("locations")}
-                  placeholder="Operating cities"
-                  className={cn(errors.locations && "border-destructive")}
-                />
-                {errors.locations && (
-                  <p className="input-error">{errors.locations.message}</p>
-                )}
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Operating Locations *</label>
+                  <Input {...register("locations")} placeholder="e.g. Mumbai, Pune" />
+                </div>
 
-              <div>
-                <label className="input-label">Founded Date *</label>
-                <Controller
-                  name="foundedDate"
-                  control={control}
-                  render={({ field }) => (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground",
-                            errors.foundedDate && "border-destructive"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? format(field.value, "PPP") : "Pick a date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date > new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                />
-                {errors.foundedDate && (
-                  <p className="input-error">{errors.foundedDate.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="input-label">Status</label>
-                <div className={cn(
-                  "h-10 px-3 flex items-center rounded-md border text-sm font-medium",
-                  isVerified 
-                    ? "bg-primary/10 border-primary/30 text-primary" 
-                    : "bg-muted border-border text-muted-foreground"
-                )}>
-                  <ShieldCheck className="w-4 h-4 mr-2" />
-                  {isVerified ? "Verified" : "Non-Verified"}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Founded Date *</label>
+                  <Controller
+                    name="foundedDate"
+                    control={control}
+                    render={({ field }) => (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                            <CalendarIcon className="mr-2 h-4 w-4 text-emerald-600" />
+                            {field.value ? format(field.value, "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 shadow-2xl border-emerald-100">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date > new Date()}
+                            className="rounded-md border border-slate-100"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  />
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Impact Metrics */}
-          <section className="form-section animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            <h2 className="form-section-title">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              Impact Metrics
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <label className="input-label">Children Connected</label>
-                <Input
-                  type="number"
-                  {...register("childrenConnected", { valueAsNumber: true })}
-                  placeholder="0"
-                  min={0}
-                />
+            {/* Impact Metrics - White with Emerald Icons */}
+            <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-fade-in" style={{ animationDelay: "0.4s" }}>
+              <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-6">
+                <BarChart3 className="w-5 h-5 text-emerald-600" />
+                Impact Metrics
+              </h2>
+              <div className="grid gap-6 sm:grid-cols-3">
+                {[
+                  { label: "Children Connected", name: "childrenConnected" as const },
+                  { label: "Schools Connected", name: "schoolsConnected" as const },
+                  { label: "Hours Provided", name: "hoursProvided" as const }
+                ].map((item) => (
+                  <div key={item.name} className="space-y-2 p-4 rounded-lg bg-slate-50/50 border border-slate-100">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{item.label}</label>
+                    <Input
+                      type="number"
+                      {...register(item.name, { valueAsNumber: true })}
+                      className="bg-white border-slate-200 focus-visible:ring-emerald-500 font-mono font-bold text-emerald-700"
+                    />
+                  </div>
+                ))}
               </div>
-              <div>
-                <label className="input-label">Schools Connected</label>
-                <Input
-                  type="number"
-                  {...register("schoolsConnected", { valueAsNumber: true })}
-                  placeholder="0"
-                  min={0}
-                />
-              </div>
-              <div>
-                <label className="input-label">Hours Provided</label>
-                <Input
-                  type="number"
-                  {...register("hoursProvided", { valueAsNumber: true })}
-                  placeholder="0"
-                  min={0}
-                />
-              </div>
-            </div>
-          </section>
+            </section>
+          </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:justify-end pt-4 animate-fade-in" style={{ animationDelay: "0.45s" }}>
+          <div className="flex flex-col sm:flex-row gap-4 sm:justify-end py-10 border-t border-slate-200">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={handleCancel}
-              className="sm:w-32"
+              className="px-10 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="btn-primary sm:w-32"
+              className="px-12 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold"
             >
-              Save
+              Submit Application
             </Button>
           </div>
         </form>
