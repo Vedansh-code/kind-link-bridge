@@ -23,7 +23,7 @@ export default function ThankYou() {
           </p>
           
           <Button asChild className="w-full" size="lg">
-            <Link to="/">Back to Home Page</Link>
+            <Link to="/dashboard">Back to Home Page</Link>
           </Button>
         </CardContent>
       </Card>

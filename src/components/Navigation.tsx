@@ -1,84 +1,112 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Bell, User } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavigationProps {
     variant?: "landing" | "dashboard";
 }
 
 export function Navigation({ variant = "landing" }: NavigationProps) {
-    const location = useLocation();
-    const path = location.pathname;
+  const [username, setUsername] = useState("User");
+  const navigate = useNavigate();
 
-    // helper to style active vs inactive link
-    const linkClasses = (href: string) =>
-        path.startsWith(href)
-            ? "text-primary font-semibold transition-colors"
-            : "text-muted-foreground hover:text-primary transition-colors";
-
-    if (variant === "dashboard") {
-        return (
-            <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    {/* Logo + Nav links */}
-                    <div className="flex items-center space-x-8">
-                        <Link to="/" className="flex items-center space-x-2">
-                            <div className="w-8 h-8 rounded-lg hero-gradient flex items-center justify-center">
-                                <span className="text-white font-bold text-lg">
-                                    H
-                                </span>
-                            </div>
-                            <span className="font-bold text-xl text-foreground">
-                                HopeConnect
-                            </span>
-                        </Link>
-                        <div className="hidden md:flex space-x-6">
-                            <Link
-                                to="/dashboard"
-                                className={linkClasses("/dashboard")}
-                            >
-                                Dashboard
-                            </Link>
-                            <Link
-                                to="/causes"
-                                className={linkClasses("/causes")}
-                            >
-                                Find Causes
-                            </Link>
-                            <Link
-                                to="/impact"
-                                className={linkClasses("/impact")}
-                            >
-                                My Impact
-                            </Link>
-                            <Link
-                                to="/events"
-                                className={linkClasses("/events")}
-                            >
-                                Events
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Right side buttons */}
-                    <div className="flex items-center space-x-4">
-                        <Button variant="ghost" size="sm" className="relative">
-                            <Bell className="h-5 w-5" />
-                            <span className="absolute -top-1 -right-1 h-3 w-3 bg-secondary rounded-full text-xs"></span>
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="flex items-center space-x-2"
-                        >
-                            <User className="h-5 w-5" />
-                            <span className="hidden sm:inline">Jane Doe</span>
-                        </Button>
-                    </div>
-                </div>
-            </nav>
-        );
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        if (userData.username) {
+          setUsername(userData.username);
+        }
+      } catch (err) {
+        console.error("Error parsing user from localStorage", err);
+      }
     }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/"); // Redirect to landing page
+  };
+
+  if (variant === "dashboard") {
+    return (
+      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-8">
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-lg hero-gradient flex items-center justify-center">
+                <span className="text-white font-bold text-lg">H</span>
+              </div>
+              <span className="font-bold text-xl text-foreground">HopeConnect</span>
+            </Link>
+            <div className="hidden md:flex space-x-6">
+              <Link to="/dashboard" className="text-foreground hover:text-primary transition-colors">
+                Dashboard
+              </Link>
+              <Link to="/causes" className="text-muted-foreground hover:text-primary transition-colors">
+                Find Causes
+              </Link>
+              <Link to="/impact" className="text-muted-foreground hover:text-primary transition-colors">
+                My Impact
+              </Link>
+              <Link to="/events" className="text-muted-foreground hover:text-primary transition-colors">
+                Events
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            {/* Notifications */}
+            <DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" size="sm" className="relative">
+      <Bell className="h-5 w-5" />
+      {/* Red dot if there are new notifications */}
+      <span className="absolute -top-1 -right-1 h-3 w-3 bg-secondary rounded-full text-xs"></span>
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-64">
+    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem>You donated ₹500 to Education Fund 🎓</DropdownMenuItem>
+    <DropdownMenuItem>New event: Beach Cleanup this Sunday 🌊</DropdownMenuItem>
+    <DropdownMenuItem>Your impact report is ready 📊</DropdownMenuItem>
+    <DropdownMenuSeparator />
+    
+  </DropdownMenuContent>
+</DropdownMenu>
+
+            {/* User Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <span className="hidden sm:inline">{username}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  🚪 Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
     // Landing variant
     return (
