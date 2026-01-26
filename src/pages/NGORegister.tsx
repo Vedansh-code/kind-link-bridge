@@ -10,15 +10,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FileUpload } from "@/components/ui/file-upload";
 import { format } from "date-fns";
-import { 
-  Building2, 
-  MapPin, 
-  Info, 
-  Users, 
-  Grid3X3, 
-  BarChart3, 
-  Plus, 
-  Trash2, 
+import {
+  Building2,
+  MapPin,
+  Info,
+  Users,
+  Grid3X3,
+  BarChart3,
+  Plus,
+  Trash2,
   CalendarIcon,
   ShieldCheck,
   Heart,
@@ -64,7 +64,7 @@ const categories = ["Education", "Healthcare", "Environment", "Child Welfare", "
 
 const NGORegister = () => {
   const navigate = useNavigate();
-  
+
   const {
     register,
     control,
@@ -97,9 +97,7 @@ const NGORegister = () => {
 
   const onSubmit = (data: FormData) => {
     console.log("Form submitted:", data);
-    toast.success("NGO Registration submitted successfully!", {
-      description: "We'll review your application and get back to you soon.",
-    });
+    navigate("/ngo/dashboard", { state: data });
   };
 
   const handleCancel = () => navigate("/");
@@ -107,10 +105,10 @@ const NGORegister = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-4xl mx-auto">
-        
+
         {/* Header - White & Green Focus */}
         <div className="text-center mb-12 animate-fade-in">
-          
+
           <h1 className="text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
             NGO Registration
           </h1>
@@ -120,7 +118,7 @@ const NGORegister = () => {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          
+
           {/* Basic Info Section - Isolated Card */}
           <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in" style={{ animationDelay: "0.1s" }}>
             <div className="bg-slate-50/50 border-b border-slate-200 px-6 py-4">
@@ -281,10 +279,22 @@ const NGORegister = () => {
                     )}
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Input {...register(`children.${index}.name`)} placeholder="Child's Name" className="bg-white" />
-                    <Input type="number" {...register(`children.${index}.age`)} placeholder="Age" className="bg-white" />
-                    <Input {...register(`children.${index}.interests`)} placeholder="Interests" className="bg-white" />
-                    <Input {...register(`children.${index}.currentNeeds`)} placeholder="Primary Needs" className="bg-white" />
+                    <div className="space-y-1">
+                      <Input {...register(`children.${index}.name`)} placeholder="Child's Name" className={cn("bg-white", errors.children?.[index]?.name && "border-red-500")} />
+                      {errors.children?.[index]?.name && <p className="text-xs text-red-500">{errors.children[index]?.name?.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                      <Input type="number" {...register(`children.${index}.age`, { valueAsNumber: true })} placeholder="Age" className={cn("bg-white", errors.children?.[index]?.age && "border-red-500")} />
+                      {errors.children?.[index]?.age && <p className="text-xs text-red-500">{errors.children[index]?.age?.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                      <Input {...register(`children.${index}.interests`)} placeholder="Interests" className={cn("bg-white", errors.children?.[index]?.interests && "border-red-500")} />
+                      {errors.children?.[index]?.interests && <p className="text-xs text-red-500">{errors.children[index]?.interests?.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                      <Input {...register(`children.${index}.currentNeeds`)} placeholder="Primary Needs" className={cn("bg-white", errors.children?.[index]?.currentNeeds && "border-red-500")} />
+                      {errors.children?.[index]?.currentNeeds && <p className="text-xs text-red-500">{errors.children[index]?.currentNeeds?.message}</p>}
+                    </div>
                   </div>
                 </div>
               ))}

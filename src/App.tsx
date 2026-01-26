@@ -17,6 +17,7 @@ import Causes from "./pages/Causes";
 import Events from "./pages/Events";
 import Login from "./pages/Login";
 import NGORegister from "./pages/NGORegister";
+import NGODashboard from "./pages/NGODashboard";
 
 
 const queryClient = new QueryClient();
@@ -32,8 +33,9 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
           <Route path="/ngo-register" element={<NGORegister />} />
+          <Route path="/ngo/dashboard" element={<NGODashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          
+
           {/* ADDED a placeholder for your missing routes */}
           <Route path="/causes" element={<Causes />} />
           <Route path="/impact" element={<Impact />} />
