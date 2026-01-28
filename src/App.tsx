@@ -17,6 +17,7 @@ import Causes from "./pages/Causes";
 import Events from "./pages/Events";
 import Login from "./pages/Login";
 import NGORegister from "./pages/NGORegister";
+import NGOLogin from "./pages/NGOLogin"; // ADDED
 import NGODashboard from "./pages/NGODashboard";
 
 
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
           <Route path="/ngo-register" element={<NGORegister />} />
+          <Route path="/ngo-login" element={<NGOLogin />} /> {/* ADDED */}
           <Route path="/ngo/dashboard" element={<NGODashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
 
