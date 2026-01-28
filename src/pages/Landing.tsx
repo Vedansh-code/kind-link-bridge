@@ -3,43 +3,72 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/StatCard";
 import { FeatureCard } from "@/components/FeatureCard";
 import { Navigation } from "@/components/Navigation";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // ADDED useNavigate
 import heroImage from "@/assets/hero-community.jpg";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog"; // ADDED Dialog components
 import signup from "@/pages/Signup"
 
 export default function Landing() {
-  return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center">
-        <div className="absolute inset-0">
-          <img 
-            src={heroImage} 
-            alt="Community coming together to help others" 
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 hero-gradient opacity-80"></div>
-        </div>
-        
-        <Navigation variant="landing" />
-        
-        <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in-up">
-            HopeConnect
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 opacity-90 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-            Connecting kindness with those who need it most.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-            <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
-              <Link to="/signup">I'm a Donor</Link>
-            </Button>
-            <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
-              <Link to="/ngo-register">I'm a NGO</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+    return (
+        <div className="min-h-screen">
+            {/* Hero Section */}
+            <section className="relative h-screen flex items-center justify-center">
+                <div className="absolute inset-0">
+                    <img
+                        src={heroImage}
+                        alt="Community coming together to help others"
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 hero-gradient opacity-80"></div>
+                </div>
+
+                <Navigation variant="landing" />
+
+                <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4">
+                    <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in-up">
+                        HopeConnect
+                    </h1>
+                    <p className="text-xl md:text-2xl mb-8 opacity-90 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                        Connecting kindness with those who need it most.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                        <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
+                            <Link to="/signup">I'm a Donor</Link>
+                        </Button>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="hero" size="lg" className="text-lg px-8 py-6 cursor-pointer">
+                                    I'm a NGO
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-bold text-center">Welcome Partner</DialogTitle>
+                                    <DialogDescription className="text-center text-lg mt-2">
+                                        Are you already a registered member of our platform?
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex flex-col gap-4 mt-6">
+                                    <Button asChild size="lg" className="w-full text-lg bg-emerald-600 hover:bg-emerald-700">
+                                        <Link to="/ngo-login">Yes, I'm already a member</Link>
+                                    </Button>
+                                    <Button asChild variant="outline" size="lg" className="w-full text-lg">
+                                        <Link to="/ngo-register">No, I want to register</Link>
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </div>
+            </section>
 
             {/* What We Do Section */}
             <section className="py-16 bg-background">
@@ -181,20 +210,40 @@ export default function Landing() {
                 </div>
             </section>
 
-      {/* Final CTA Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Join today and make your impact.</h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
-              <Link to="/Signup">Sign Up as Donor</Link>
-            </Button>
-            <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
-              <Link to="/ngo-register">Sign Up as NGO</Link>
-            </Button>
-          </div>
+            {/* Final CTA Section */}
+            <section className="py-16 bg-primary text-primary-foreground">
+                <div className="container mx-auto px-4 text-center">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-6">Join today and make your impact.</h2>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Button asChild variant="hero" size="lg" className="text-lg px-8 py-6">
+                            <Link to="/Signup">Sign Up as Donor</Link>
+                        </Button>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="hero" size="lg" className="text-lg px-8 py-6 cursor-pointer">
+                                    Sign Up as NGO
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-bold text-center">Welcome Partner</DialogTitle>
+                                    <DialogDescription className="text-center text-lg mt-2">
+                                        Are you already a registered member of our platform?
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex flex-col gap-4 mt-6">
+                                    <Button asChild size="lg" className="w-full text-lg bg-emerald-600 hover:bg-emerald-700">
+                                        <Link to="/ngo-login">Yes, I'm already a member</Link>
+                                    </Button>
+                                    <Button asChild variant="outline" size="lg" className="w-full text-lg">
+                                        <Link to="/ngo-register">No, I want to register</Link>
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </div>
+            </section>
         </div>
-      </section>
-    </div>
-  );
+    );
 }

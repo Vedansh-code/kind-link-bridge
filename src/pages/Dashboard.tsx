@@ -2,16 +2,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
 import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    PieChart,
-    Pie,
-    Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { Heart, Users, Clock, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -23,53 +23,53 @@ import { io, Socket } from "socket.io-client";
 const API_BASE_URL = "https://kind-link-bridge-backend-1.onrender.com";
 
 const featuredCauses = [
-    {
-        id: 1,
-        name: "Hope Foundation",
-        mission:
-            "Empowering children through quality education in underserved communities",
-        image: "🎓",
-        location: "Delhi",
-    },
-    {
-        id: 2,
-        name: "Sunshine Home",
-        mission:
-            "Building sustainable communities through environmental initiatives",
-        image: "🌱",
-        location: "Bangalore",
-    },
-    {
-        id: 3,
-        name: "Little Steps",
-        mission: "Providing essential medical care to rural communities",
-        image: "🏥",
-        location: "Chennai",
-    },
-    {
-        id: 4,
-        name: "Smile Care Trust",
-        mission:
-            "Empowering children through quality education in underserved communities",
-        image: "🎓",
-        location: "Mumbai",
-    },
-    {
-        id: 5,
-        name: "Green Future Initiative",
-        mission:
-            "Empowering children through quality education in underserved communities",
-        image: "🎓",
-        location: "Delhi",
-    },
-    {
-        id: 6,
-        name: "Health for All",
-        mission:
-            "Empowering children through quality education in underserved communities",
-        image: "🎓",
-        location: "Kolkata",
-    },
+  {
+    id: 1,
+    name: "Hope Foundation",
+    mission:
+      "Empowering children through quality education in underserved communities",
+    image: "🎓",
+    location: "Delhi",
+  },
+  {
+    id: 2,
+    name: "Sunshine Home",
+    mission:
+      "Building sustainable communities through environmental initiatives",
+    image: "🌱",
+    location: "Bangalore",
+  },
+  {
+    id: 3,
+    name: "Little Steps",
+    mission: "Providing essential medical care to rural communities",
+    image: "🏥",
+    location: "Chennai",
+  },
+  {
+    id: 4,
+    name: "Smile Care Trust",
+    mission:
+      "Empowering children through quality education in underserved communities",
+    image: "🎓",
+    location: "Mumbai",
+  },
+  {
+    id: 5,
+    name: "Green Future Initiative",
+    mission:
+      "Empowering children through quality education in underserved communities",
+    image: "🎓",
+    location: "Delhi",
+  },
+  {
+    id: 6,
+    name: "Health for All",
+    mission:
+      "Empowering children through quality education in underserved communities",
+    image: "🎓",
+    location: "Kolkata",
+  },
 ];
 
 export default function Dashboard() {
@@ -99,7 +99,22 @@ export default function Dashboard() {
     const storedUser = localStorage.getItem("user");
     if (!storedUser) return;
 
-    const userData = JSON.parse(storedUser);
+    let userData = JSON.parse(storedUser);
+
+    // ADJUSTED: CLIENT SIDE PENDING ROLE CHECK
+    const pendingRole = localStorage.getItem('pending_role');
+    if (pendingRole === 'ngo') {
+      userData = { ...userData, role: 'ngo' };
+      localStorage.setItem('user', JSON.stringify(userData)); // update persistence
+      localStorage.removeItem('pending_role'); // clear flag
+    }
+
+    // Redirect NGO users to their dashboard
+    if (userData.role === 'ngo') {
+      window.location.href = '/#/ngo/dashboard'; // Using hash router
+      return;
+    }
+
     setUserId(userData.id);
     if (userData.username) setUsername(userData.username);
     fetchDashboard(userData.id);
@@ -121,7 +136,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation variant="dashboard" />
-      
+
       <main className="container mx-auto p-6">
         {/* Welcome Section */}
         <div className="mb-8">
@@ -176,7 +191,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData.length ? monthlyData : [{month:"-", amount:0}]}>
+                <BarChart data={monthlyData.length ? monthlyData : [{ month: "-", amount: 0 }]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
@@ -195,7 +210,7 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={categoryData.length ? categoryData : [{name:"None", value:100, color:"#ccc"}]}
+                    data={categoryData.length ? categoryData : [{ name: "None", value: 100, color: "#ccc" }]}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -222,50 +237,50 @@ export default function Dashboard() {
           </Card>
         </div>
 
-                {/* Featured Causes */}
-                <Card className="card-hover">
-                    <CardHeader>
-                        <CardTitle>Support a Cause</CardTitle>
-                        <p className="text-muted-foreground">
-                            Discover new organizations making a difference
-                        </p>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {featuredCauses.map((cause) => (
-                                <Card
-                                    key={cause.id}
-                                    className="card-hover border-0 bg-accent/50"
-                                >
-                                    <CardContent className="p-6">
-                                        <div className="text-4xl mb-4 text-center">
-                                            {cause.image}
-                                        </div>
-                                        <h3 className="font-semibold text-lg mb-2 text-foreground">
-                                            {cause.name}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-                                            {cause.mission}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mb-4">
-                                            📍 {cause.location}
-                                        </p>
-                                        <Button
-                                            asChild
-                                            variant="default"
-                                            className="w-full"
-                                        >
-                                            <Link to={`/ngo/${cause.id}`}>
-                                                Learn More
-                                            </Link>
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    </CardContent>
+        {/* Featured Causes */}
+        <Card className="card-hover">
+          <CardHeader>
+            <CardTitle>Support a Cause</CardTitle>
+            <p className="text-muted-foreground">
+              Discover new organizations making a difference
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredCauses.map((cause) => (
+                <Card
+                  key={cause.id}
+                  className="card-hover border-0 bg-accent/50"
+                >
+                  <CardContent className="p-6">
+                    <div className="text-4xl mb-4 text-center">
+                      {cause.image}
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2 text-foreground">
+                      {cause.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                      {cause.mission}
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      📍 {cause.location}
+                    </p>
+                    <Button
+                      asChild
+                      variant="default"
+                      className="w-full"
+                    >
+                      <Link to={`/ngo/${cause.id}`}>
+                        Learn More
+                      </Link>
+                    </Button>
+                  </CardContent>
                 </Card>
-            </main>
-        </div>
-    );
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
 }
