@@ -97,7 +97,13 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="w-full cursor-pointer flex items-center">
+                    👤 My Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   🚪 Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
