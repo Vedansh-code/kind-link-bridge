@@ -19,6 +19,7 @@ import Login from "./pages/Login";
 import NGORegister from "./pages/NGORegister";
 import NGOLogin from "./pages/NGOLogin";
 import NGODashboard from "./pages/NGODashboard";
+import Profile from "./pages/Profile";
 
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/causes" element={<Causes />} />
           <Route path="/impact" element={<Impact />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/profile" element={<Profile />} />
 
           <Route path="/ngo/:id" element={<NGODetail />} />
           <Route path="/payment" element={<Payment />} />
