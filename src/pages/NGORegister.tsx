@@ -10,15 +10,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FileUpload } from "@/components/ui/file-upload";
 import { format } from "date-fns";
-import { 
-  Building2, 
-  MapPin, 
-  Info, 
-  Users, 
-  Grid3X3, 
-  BarChart3, 
-  Plus, 
-  Trash2, 
+import {
+  Building2,
+  MapPin,
+  Info,
+  Users,
+  Grid3X3,
+  BarChart3,
+  Plus,
+  Trash2,
   CalendarIcon,
   ShieldCheck,
   Heart,
@@ -37,6 +37,9 @@ const childSchema = z.object({
 });
 
 const formSchema = z.object({
+  // ADDED Email and Password for registration
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   orgName: z.string().min(1, "Organization name is required"),
   tagline: z.string().optional(),
   isVerified: z.boolean(),
@@ -64,7 +67,7 @@ const categories = ["Education", "Healthcare", "Environment", "Child Welfare", "
 
 const NGORegister = () => {
   const navigate = useNavigate();
-  
+
   const {
     register,
     control,
@@ -74,6 +77,8 @@ const NGORegister = () => {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      email: "",
+      password: "",
       orgName: "",
       tagline: "",
       isVerified: false,
@@ -97,9 +102,7 @@ const NGORegister = () => {
 
   const onSubmit = (data: FormData) => {
     console.log("Form submitted:", data);
-    toast.success("NGO Registration submitted successfully!", {
-      description: "We'll review your application and get back to you soon.",
-    });
+    navigate("/ngo/dashboard", { state: data });
   };
 
   const handleCancel = () => navigate("/");
@@ -107,10 +110,10 @@ const NGORegister = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-4xl mx-auto">
-        
+
         {/* Header - White & Green Focus */}
         <div className="text-center mb-12 animate-fade-in">
-          
+
           <h1 className="text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
             NGO Registration
           </h1>
@@ -120,7 +123,7 @@ const NGORegister = () => {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          
+
           {/* Basic Info Section - Isolated Card */}
           <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in" style={{ animationDelay: "0.1s" }}>
             <div className="bg-slate-50/50 border-b border-slate-200 px-6 py-4">
@@ -130,6 +133,67 @@ const NGORegister = () => {
               </h2>
             </div>
             <div className="p-6 grid gap-6 sm:grid-cols-2">
+              {/* ADDED: Login Credentials Section */}
+              <div className="sm:col-span-2 space-y-4 pb-6 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Account Credentials</h3>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Email Address *</label>
+                    <Input
+                      type="email"
+                      {...register("email")}
+                      placeholder="official@organization.org"
+                      className={cn("focus-visible:ring-emerald-500", errors.email && "border-red-500")}
+                    />
+                    {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Password *</label>
+                    <Input
+                      type="password"
+                      {...register("password")}
+                      placeholder="Create a strong password"
+                      className={cn("focus-visible:ring-emerald-500", errors.password && "border-red-500")}
+                    />
+                    {errors.password && <p className="text-xs text-red-500 font-medium">{errors.password.message}</p>}
+                  </div>
+                </div>
+                <div className="relative my-4 flex items-center">
+                  <div className="flex-grow border-t border-slate-100"></div>
+                  <span className="flex-shrink mx-4 text-slate-400 text-xs font-bold uppercase tracking-widest">Or Register with</span>
+                  <div className="flex-grow border-t border-slate-100"></div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.setItem('pending_role', 'ngo');
+                    window.open(`https://kind-link-bridge-backend-1.onrender.com/auth/google?role=ngo`, "_self");
+                  }}
+                  className="flex items-center justify-center w-full py-2.5 font-medium transition-colors bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 hover:shadow-sm"
+                >
+                  <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                    <path
+                      fill="#EA4335"
+                      d="M24 12.27c0-.85-.07-1.66-.21-2.44H12v4.62h6.72c-.29 1.58-1.18 2.92-2.52 3.81v3.17h4.08c2.39-2.2 3.72-5.44 3.72-9.16z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-4.08-3.17c-1.13.75-2.57 1.2-3.85 1.2-2.97 0-5.49-2.01-6.39-4.7H1.53v3.23C3.51 21.82 7.46 24 12 24z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M5.61 14.42c-.24-.71-.37-1.46-.37-2.42s.13-1.71.37-2.42V6.35H1.53c-.8 1.6-1.26 3.4-1.26 5.3s.46 3.7 1.26 5.3l4.08-3.23z"
+                    />
+                    <path
+                      fill="#4285F4"
+                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.45-3.45C17.95 1.08 15.24 0 12 0 7.46 0 3.51 2.18 1.53 5.58l4.08 3.23c.9-2.69 3.42-4.7 6.39-4.7z"
+                    />
+                  </svg>
+                  Continue with Google
+                </button>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Name of Organization *</label>
                 <Input
@@ -281,10 +345,22 @@ const NGORegister = () => {
                     )}
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Input {...register(`children.${index}.name`)} placeholder="Child's Name" className="bg-white" />
-                    <Input type="number" {...register(`children.${index}.age`)} placeholder="Age" className="bg-white" />
-                    <Input {...register(`children.${index}.interests`)} placeholder="Interests" className="bg-white" />
-                    <Input {...register(`children.${index}.currentNeeds`)} placeholder="Primary Needs" className="bg-white" />
+                    <div className="space-y-1">
+                      <Input {...register(`children.${index}.name`)} placeholder="Child's Name" className={cn("bg-white", errors.children?.[index]?.name && "border-red-500")} />
+                      {errors.children?.[index]?.name && <p className="text-xs text-red-500">{errors.children[index]?.name?.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                      <Input type="number" {...register(`children.${index}.age`, { valueAsNumber: true })} placeholder="Age" className={cn("bg-white", errors.children?.[index]?.age && "border-red-500")} />
+                      {errors.children?.[index]?.age && <p className="text-xs text-red-500">{errors.children[index]?.age?.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                      <Input {...register(`children.${index}.interests`)} placeholder="Interests" className={cn("bg-white", errors.children?.[index]?.interests && "border-red-500")} />
+                      {errors.children?.[index]?.interests && <p className="text-xs text-red-500">{errors.children[index]?.interests?.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                      <Input {...register(`children.${index}.currentNeeds`)} placeholder="Primary Needs" className={cn("bg-white", errors.children?.[index]?.currentNeeds && "border-red-500")} />
+                      {errors.children?.[index]?.currentNeeds && <p className="text-xs text-red-500">{errors.children[index]?.currentNeeds?.message}</p>}
+                    </div>
                   </div>
                 </div>
               ))}

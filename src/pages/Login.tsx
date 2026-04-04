@@ -9,39 +9,39 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true); // start loading
-    setMessage("");
+      e.preventDefault();
+      setLoading(true);
+      setMessage("");
 
-    try {
-      const response = await fetch("https://kind-link-bridge-backend-1.onrender.com/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      let data;
       try {
-        data = await response.json();
-      } catch {
-        setMessage("⚠️ Unexpected server response");
-        setLoading(false);
-        return;
-      }
+          const response = await fetch(
+              "https://kind-link-bridge-backend-1.onrender.com/api/auth/login",
+              {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include", // 🔴 REQUIRED for sessions
+                  body: JSON.stringify({ email, password }),
+              },
+          );
 
-      if (response.ok) {
-        localStorage.setItem("user", JSON.stringify(data));
-        setMessage("✅ Login successful!");
-        navigate("/dashboard");
-      } else {
-        setMessage(`❌ Error: ${data.error || "Login failed"}`);
+          const data = await response.json();
+
+          if (response.ok) {
+              // ⚠️ optional, backend is source of truth
+              localStorage.setItem("user", JSON.stringify(data));
+
+              setMessage("✅ Login successful!");
+              navigate("/dashboard");
+          } else {
+              setMessage(`❌ ${data.error || "Login failed"}`);
+          }
+      } catch (error) {
+          setMessage("⚠️ Server not reachable");
+      } finally {
+          setLoading(false);
       }
-    } catch (error) {
-      setMessage("⚠️ Server not reachable");
-    } finally {
-      setLoading(false); // stop loading in all cases
-    }
   };
+
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-100">

@@ -10,6 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+const BACKEND_URL = "https://kind-link-bridge-backend-1.onrender.com";
+
 
 interface NavigationProps {
     variant?: "landing" | "dashboard";
@@ -33,10 +35,21 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    navigate("/"); // Redirect to landing page
+  const handleLogout = async () => {
+      try {
+          await fetch(`${BACKEND_URL}/api/auth/logout`, {
+              method: "POST",
+              credentials: "include", // 🔴 REQUIRED
+          });
+      } catch (err) {
+          console.error("Logout request failed", err);
+      } finally {
+          // Clean frontend state
+          localStorage.removeItem("user");
+          navigate("/"); // or "/login"
+      }
   };
+
 
   if (variant === "dashboard") {
     return (
