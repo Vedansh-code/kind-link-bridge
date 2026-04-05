@@ -25,6 +25,9 @@ export default function Profile() {
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
+    phone: "",
+    age: "",
+    gender: "",
     categories: [] as string[],
     location: "",
     minDonation: "",
@@ -39,7 +42,7 @@ export default function Profile() {
       try {
         const userData = JSON.parse(storedUser);
         setUsername(userData.username || "User");
-        
+
         // Load existing profile if it exists (simulate or fetch from local config)
         const profileData = localStorage.getItem(`profile_${userData.id}`);
         if (profileData) {
@@ -67,7 +70,7 @@ export default function Profile() {
     setSaving(true);
     // Simulate API call to save profile
     await new Promise((resolve) => setTimeout(resolve, 800));
-    
+
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const userData = JSON.parse(storedUser);
@@ -93,16 +96,70 @@ export default function Profile() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8 pt-8">
-            
-            {/* Preferred Category */}
+
+            {/* Personal Information */}
             <div className="space-y-3">
-              <Label className="text-lg font-semibold border-b pb-2 flex">1. Preferred Category</Label>
+              <Label className="text-lg font-semibold border-b pb-2 flex">1. Personal Information</Label>
+              <p className="text-sm text-muted-foreground">Tell us a bit more about yourself.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+91 9876543210"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="age">Age</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    placeholder="e.g. 25"
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <Label>Gender</Label>
+                <RadioGroup
+                  value={formData.gender}
+                  onValueChange={(val) => setFormData({ ...formData, gender: val })}
+                  className="flex space-x-4 mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="male" id="gender-male" />
+                    <Label htmlFor="gender-male" className="cursor-pointer font-normal">Male</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="female" id="gender-female" />
+                    <Label htmlFor="gender-female" className="cursor-pointer font-normal">Female</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="other" id="gender-other" />
+                    <Label htmlFor="gender-other" className="cursor-pointer font-normal">Other</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+
+
+            {/* Preferred Category */}
+            <div className="space-y-3 mt-8">
+              <Label className="text-lg font-semibold border-b pb-2 flex">2. Preferred Category</Label>
+              {/* <p className="text-sm text-muted-foreground">Select the causes you are most passionate about.</p> */}
               <p className="text-sm text-muted-foreground">Select the causes you are most passionate about.</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
                 {CATEGORIES.map((category) => (
                   <div key={category} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`cat-${category}`} 
+                    <Checkbox
+                      id={`cat-${category}`}
                       checked={formData.categories.includes(category)}
                       onCheckedChange={(checked) => handleCategoryChange(category, checked as boolean)}
                     />
@@ -116,9 +173,9 @@ export default function Profile() {
 
             {/* Location */}
             <div className="space-y-3">
-              <Label className="text-lg font-semibold border-b pb-2 flex">2. Location</Label>
+              <Label className="text-lg font-semibold border-b pb-2 flex">3. Location</Label>
               <p className="text-sm text-muted-foreground">Select your primary city for local impact opportunities.</p>
-              <Select value={formData.location} onValueChange={(val) => setFormData({...formData, location: val})}>
+              <Select value={formData.location} onValueChange={(val) => setFormData({ ...formData, location: val })}>
                 <SelectTrigger className="w-full md:w-[300px]">
                   <SelectValue placeholder="Select a city" />
                 </SelectTrigger>
@@ -132,28 +189,28 @@ export default function Profile() {
 
             {/* Donation Range */}
             <div className="space-y-3">
-              <Label className="text-lg font-semibold border-b pb-2 flex">3. Donation Range (₹)</Label>
+              <Label className="text-lg font-semibold border-b pb-2 flex">4. Donation Range (₹)</Label>
               <p className="text-sm text-muted-foreground">What is your typical budget for donations?</p>
               <div className="flex items-center space-x-4 max-w-sm">
                 <div className="space-y-1">
                   <Label htmlFor="minDonation" className="text-xs">Minimum</Label>
-                  <Input 
-                    id="minDonation" 
-                    type="number" 
-                    placeholder="e.g. 500" 
+                  <Input
+                    id="minDonation"
+                    type="number"
+                    placeholder="e.g. 500"
                     value={formData.minDonation}
-                    onChange={(e) => setFormData({...formData, minDonation: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, minDonation: e.target.value })}
                   />
                 </div>
                 <div className="pt-5 text-muted-foreground">-</div>
                 <div className="space-y-1">
                   <Label htmlFor="maxDonation" className="text-xs">Maximum</Label>
-                  <Input 
-                    id="maxDonation" 
-                    type="number" 
+                  <Input
+                    id="maxDonation"
+                    type="number"
                     placeholder="e.g. 5000"
                     value={formData.maxDonation}
-                    onChange={(e) => setFormData({...formData, maxDonation: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, maxDonation: e.target.value })}
                   />
                 </div>
               </div>
@@ -161,11 +218,11 @@ export default function Profile() {
 
             {/* Preferred Type */}
             <div className="space-y-3">
-              <Label className="text-lg font-semibold border-b pb-2 flex">4. Preferred Type of Organisation</Label>
+              <Label className="text-lg font-semibold border-b pb-2 flex">5. Preferred Type of Organisation</Label>
               <p className="text-sm text-muted-foreground">Do you prefer supporting NGOs or Orphanages?</p>
-              <RadioGroup 
-                value={formData.preferredType} 
-                onValueChange={(val) => setFormData({...formData, preferredType: val})}
+              <RadioGroup
+                value={formData.preferredType}
+                onValueChange={(val) => setFormData({ ...formData, preferredType: val })}
                 className="flex flex-col space-y-2 mt-2"
               >
                 <div className="flex items-center space-x-2">
@@ -185,11 +242,11 @@ export default function Profile() {
 
             {/* Donation Types */}
             <div className="space-y-3">
-              <Label className="text-lg font-semibold border-b pb-2 flex">5. Types of Donation</Label>
+              <Label className="text-lg font-semibold border-b pb-2 flex">6. Types of Donation</Label>
               <p className="text-sm text-muted-foreground">How would you like to contribute?</p>
-              <RadioGroup 
-                value={formData.donationType} 
-                onValueChange={(val) => setFormData({...formData, donationType: val})}
+              <RadioGroup
+                value={formData.donationType}
+                onValueChange={(val) => setFormData({ ...formData, donationType: val })}
                 className="flex flex-col space-y-2 mt-2"
               >
                 <div className="flex items-center space-x-2">
