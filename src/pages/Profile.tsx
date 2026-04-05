@@ -16,8 +16,7 @@ const INDIAN_CITIES = [
   "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam",
   "Pimpri-Chinchwad", "Patna", "Vadodara"
 ].sort();
-
-const CATEGORIES = ["Food", "Shelter", "Arts", "Education"];
+const CATEGORIES = ["Food", "Shelter", "Health", "Arts", "Education"];
 
 export default function Profile() {
   const [username, setUsername] = useState("");
