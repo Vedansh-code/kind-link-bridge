@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Navigation } from "@/components/Navigation";
 import {
   BarChart,
@@ -13,7 +14,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Heart, Users, Clock, TrendingUp } from "lucide-react";
+import { Heart, Users, Clock, TrendingUp, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -83,6 +84,7 @@ export default function Dashboard() {
     const [categoryData, setCategoryData] = useState<any[]>([]);
     const [socket, setSocket] = useState<Socket | null>(null);
     const [userId, setUserId] = useState<number | null>(null);
+    const [isProfileComplete, setIsProfileComplete] = useState(true);
 
     const fetchDashboard = async (id: number) => {
         try {
@@ -106,6 +108,11 @@ export default function Dashboard() {
         if (userData.username) setUsername(userData.username);
         fetchDashboard(userData.id);
 
+        const profileData = localStorage.getItem(`profile_${userData.id}`);
+        if (!profileData) {
+            setIsProfileComplete(false);
+        }
+
         // Initialize Socket.io client
         const newSocket = io(API_BASE_URL);
         setSocket(newSocket);
@@ -126,7 +133,7 @@ export default function Dashboard() {
 
             <main className="container mx-auto p-6">
                 {/* Welcome Section */}
-                <div className="mb-8">
+                <div className="mb-6">
                     <h1 className="text-3xl font-bold text-foreground mb-2">
                         Welcome back, {username}!
                     </h1>
@@ -135,6 +142,19 @@ export default function Dashboard() {
                         help.
                     </p>
                 </div>
+
+                {!isProfileComplete && (
+                    <Alert className="mb-8 bg-primary/5 border-primary/20">
+                        <Info className="h-4 w-4 text-primary" />
+                        <AlertTitle>Complete your profile</AlertTitle>
+                        <AlertDescription className="mt-2 flex items-center justify-between">
+                            <span>Help us match you with the best causes by telling us your preferences.</span>
+                            <Button asChild size="sm" variant="outline" className="ml-4 border-primary/20 hover:bg-primary/10 hover:text-primary">
+                                <Link to="/profile">Complete Profile</Link>
+                            </Button>
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 {/* Key Statistics */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
