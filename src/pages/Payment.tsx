@@ -90,7 +90,7 @@ export default function Payment() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="grid lg:grid-cols-2 min-h-screen">
         {/* Left Panel - NGO Summary */}
-        <div className="bg-primary text-primary-foreground p-8 lg:p-12 pt-24 lg:pt-32 flex flex-col justify-start relative overflow-hidden">
+        <div className="bg-primary text-primary-foreground p-8 lg:p-12 flex flex-col justify-start relative overflow-hidden">
           {/* Subtle Background Elements */}
           <div className="absolute top-0 right-0 p-12 opacity-10 translate-x-12 -translate-y-12">
             <Heart className="w-96 h-96" />
@@ -139,7 +139,7 @@ export default function Payment() {
         </div>
 
         {/* Right Panel - Payment Gateway */}
-        <div className="bg-muted/30 p-8 lg:p-12 flex justify-center items-start pt-24 lg:pt-32 overflow-y-auto">
+        <div className="bg-muted/30 p-8 lg:p-12 flex justify-center items-start overflow-y-auto">
           <div className="w-full max-w-md">
 
             <Card className="shadow-2xl border-border/60 bg-card/90 backdrop-blur-xl rounded-2xl overflow-hidden">
