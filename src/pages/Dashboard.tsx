@@ -76,7 +76,13 @@ const featuredCauses = [
 ];
 
 export default function Dashboard() {
-    const [username, setUsername] = useState("User");
+    const [username, setUsername] = useState(() => {
+        try {
+            const stored = localStorage.getItem("user");
+            if (stored) return JSON.parse(stored).username || "User";
+        } catch (e) {}
+        return "User";
+    });
     const [donations, setDonations] = useState(0);
     const [hours, setHours] = useState(0);
     const [causes, setCauses] = useState<string[]>([]);

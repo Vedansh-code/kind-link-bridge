@@ -18,7 +18,13 @@ interface NavigationProps {
 }
 
 export function Navigation({ variant = "landing" }: NavigationProps) {
-  const [username, setUsername] = useState("User");
+  const [username, setUsername] = useState(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) return JSON.parse(stored).username || "User";
+    } catch (e) {}
+    return "User";
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
