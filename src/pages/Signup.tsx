@@ -35,6 +35,7 @@ const Signup: React.FC = () => {
             const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({ username, email, password }),
             });
             const data = await response.json();

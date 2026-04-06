@@ -100,30 +100,44 @@ export default function Dashboard() {
     };
 
     useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (!storedUser) return;
+        const initializeDashboard = async () => {
+            try {
+                // Ask backend to verify who is logged in via cookie
+                const realUser = await checkAuth();
+                
+                if (realUser && !realUser.error) {
+                    const userData = {
+                        id: realUser._id || realUser.id,
+                        username: realUser.username,
+                        email: realUser.email
+                    };
+                    localStorage.setItem("user", JSON.stringify(userData));
 
-        const userData = JSON.parse(storedUser);
-        setUserId(userData.id);
-        if (userData.username) setUsername(userData.username);
-        fetchDashboard(userData.id);
+                    setUserId(userData.id);
+                    setUsername(userData.username);
+                    fetchDashboard(userData.id);
 
-        const profileData = localStorage.getItem(`profile_${userData.id}`);
-        if (!profileData) {
-            setIsProfileComplete(false);
-        }
+                    const profileData = localStorage.getItem(`profile_${userData.id}`);
+                    if (!profileData) {
+                        setIsProfileComplete(false);
+                    }
 
-        // Initialize Socket.io client
-        const newSocket = io(API_BASE_URL);
-        setSocket(newSocket);
+                    const newSocket = io(API_BASE_URL);
+                    setSocket(newSocket);
 
-        // Listen for donation updates
-        newSocket.on(`donation-update-${userData.id}`, () => {
-            fetchDashboard(userData.id);
-        });
+                    newSocket.on(`donation-update-${userData.id}`, () => {
+                        fetchDashboard(userData.id);
+                    });
+                }
+            } catch (err) {
+                console.error("Not authenticated", err);
+            }
+        };
+
+        initializeDashboard();
 
         return () => {
-            newSocket.disconnect();
+            if (socket) socket.disconnect();
         };
     }, []);
 
