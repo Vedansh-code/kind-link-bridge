@@ -316,7 +316,7 @@ export default function NGODetail() {
                                             size="lg"
                                             variant="success"
                                         >
-                                            <Link to="/payment">
+                                            <Link to="/payment" state={{ ngo, amount: donationAmount || "₹1,000" }}>
                                                 Donate Now
                                             </Link>
                                         </Button>
