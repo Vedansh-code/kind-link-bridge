@@ -90,7 +90,7 @@ export default function Payment() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="grid lg:grid-cols-2 min-h-screen">
         {/* Left Panel - NGO Summary */}
-        <div className="bg-primary text-primary-foreground p-8 lg:p-12 flex flex-col justify-center relative overflow-hidden">
+        <div className="bg-primary text-primary-foreground p-8 lg:p-12 pt-24 lg:pt-32 flex flex-col justify-start relative overflow-hidden">
           {/* Subtle Background Elements */}
           <div className="absolute top-0 right-0 p-12 opacity-10 translate-x-12 -translate-y-12">
             <Heart className="w-96 h-96" />
@@ -139,14 +139,8 @@ export default function Payment() {
         </div>
 
         {/* Right Panel - Payment Gateway */}
-        <div className="bg-muted/30 p-8 lg:p-12 flex items-center justify-center overflow-y-auto">
-          <div className="w-full max-w-md py-8">
-            
-            <div className="mb-8 text-center bg-card p-6 rounded-2xl shadow-sm border border-border inline-block w-full">
-               <ShieldCheck className="h-12 w-12 text-success mx-auto mb-3" />
-               <h2 className="text-2xl font-black text-foreground tracking-tight">Secure Checkout</h2>
-               <p className="text-muted-foreground text-sm font-medium mt-1">Complete your donation securely below.</p>
-            </div>
+        <div className="bg-muted/30 p-8 lg:p-12 flex justify-center items-start pt-24 lg:pt-32 overflow-y-auto">
+          <div className="w-full max-w-md">
 
             <Card className="shadow-2xl border-border/60 bg-card/90 backdrop-blur-xl rounded-2xl overflow-hidden">
               <CardContent className="p-6 sm:p-8">
@@ -319,7 +313,7 @@ export default function Payment() {
             </p>
             <div className="pt-6">
               <Button asChild onClick={handleCloseModal} className="w-full h-12 rounded-xl text-md font-bold shadow-lg">
-                <Link to="/thank-you">Return to Dashboard</Link>
+                <Link to="/dashboard">Return to Dashboard</Link>
               </Button>
             </div>
           </div>
