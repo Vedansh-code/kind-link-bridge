@@ -51,7 +51,27 @@ export const EventScheduleModal = ({ isOpen, onClose, ngoName }: EventScheduleMo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Simulate form submission
+    // Get user id to save event against
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      const events = JSON.parse(localStorage.getItem(`events_${userData.id}`) || "[]");
+      
+      let hours = 0;
+      if (timeSlot === "morning") hours = 3;
+      else if (timeSlot === "afternoon") hours = 4;
+      else if (timeSlot === "evening") hours = 2;
+      
+      events.push({
+        ngoName,
+        date: selectedDate,
+        timeSlot,
+        hours,
+        eventType: formData.eventType
+      });
+      localStorage.setItem(`events_${userData.id}`, JSON.stringify(events));
+    }
+
     toast({
       title: "Event request sent successfully!",
       description: `Your request for ${ngoName} has been submitted. They will contact you within 2-3 business days.`,
@@ -234,7 +254,7 @@ export const EventScheduleModal = ({ isOpen, onClose, ngoName }: EventScheduleMo
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button type="submit" className="flex-1 bg-primary text-white">
               Send Event Request
             </Button>
           </div>

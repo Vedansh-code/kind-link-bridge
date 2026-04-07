@@ -136,9 +136,16 @@ export default function Dashboard() {
                 console.log("Backend not reachable, using local data only.");
             }
 
+            const localEvents = JSON.parse(localStorage.getItem(`events_${id}`) || "[]");
+            let localHours = 0;
+            localEvents.forEach((e: any) => {
+               localHours += (e.hours || 0);
+               if (e.ngoName) causesSet.add(e.ngoName);
+            });
+
             // Merge local and backend
             const combinedDonations = Math.max(localTotal, backendDonations);
-            const combinedHours = backendHours > 0 ? backendHours : causesSet.size * 2; // dummy mock logic: 2 hours per cause
+            const combinedHours = Math.max(localHours, backendHours);
             
             const finalCauses = Array.from(new Set([...backendCauses, ...Array.from(causesSet)]));
 
