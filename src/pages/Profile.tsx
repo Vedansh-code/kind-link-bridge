@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
+import { MapPin } from "lucide-react";
 
 const INDIAN_CITIES = [
   "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad",
@@ -21,6 +22,7 @@ const CATEGORIES = ["Food", "Shelter", "Health", "Arts", "Education"];
 export default function Profile() {
   const [username, setUsername] = useState("");
   const [saving, setSaving] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -84,6 +86,51 @@ export default function Profile() {
     });
   };
 
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast({ title: "Error", description: "Geolocation is not supported by your browser.", variant: "destructive" });
+      return;
+    }
+    
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          // Reverse geocode using OpenStreetMap
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await response.json();
+          
+          if (data && data.address) {
+            // Try to match with our subset of Indian cities, else keep empty / current
+            const foundCity = INDIAN_CITIES.find(c => 
+              data.address.city?.includes(c) || 
+              data.address.state_district?.includes(c) ||
+              c.includes(data.address.city)
+            );
+            
+            setFormData(prev => ({
+              ...prev,
+              location: foundCity || prev.location, // auto selects city dropdown if matched
+              pincode: data.address.postcode || prev.pincode,
+              street: data.address.road || data.address.suburb || data.address.neighbourhood || prev.street,
+            }));
+            
+            toast({ title: "Location fetched", description: "We've auto-filled your location details as best as possible." });
+          }
+        } catch (error) {
+          toast({ title: "Error", description: "Could not fetch address details.", variant: "destructive" });
+        } finally {
+          setGettingLocation(false);
+        }
+      },
+      (error) => {
+        setGettingLocation(false);
+        toast({ title: "Error", description: "Permission denied or could not get location.", variant: "destructive" });
+      }
+    );
+  };
+
   const handleSave = async () => {
     setSaving(true);
     // Simulate API call to save profile
@@ -145,7 +192,8 @@ export default function Profile() {
                     type="email"
                     placeholder="Your email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled
+                    className="bg-muted cursor-not-allowed"
                   />
                 </div>
 
@@ -219,7 +267,13 @@ export default function Profile() {
 
             {/* Location */}
             <div className="space-y-3 mt-8">
-              <Label className="text-lg font-semibold border-b pb-2 flex">3. Address & Location</Label>
+              <div className="flex justify-between items-center border-b pb-2">
+                <Label className="text-lg font-semibold flex">3. Address & Location</Label>
+                <Button variant="outline" size="sm" onClick={handleGetLocation} disabled={gettingLocation}>
+                  <MapPin className="w-4 h-4 mr-2" />
+                  {gettingLocation ? "Locating..." : "Use Current Location"}
+                </Button>
+              </div>
               <p className="text-sm text-muted-foreground">Select your primary city and enter your address details.</p>
               
               <div className="space-y-5 mt-2">
