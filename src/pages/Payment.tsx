@@ -59,6 +59,16 @@ export default function Payment() {
     const numericAmount = Number(formData.amount.replace(/[^0-9.]/g, ""));
 
     try {
+      // Save locally to make dashboard dynamic immediately
+      const localDonations = JSON.parse(localStorage.getItem(`donations_${userId}`) || '[]');
+      localDonations.push({
+        amount: numericAmount,
+        ngoName: targetNgo.name || "Unknown NGO",
+        category: targetNgo.category || "General",
+        date: new Date().toISOString()
+      });
+      localStorage.setItem(`donations_${userId}`, JSON.stringify(localDonations));
+
       // Attempt to send donation to backend
       await axios.post("https://kind-link-bridge-backend-1.onrender.com/donations", {
         user_id: userId,

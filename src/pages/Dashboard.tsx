@@ -94,14 +94,80 @@ export default function Dashboard() {
 
     const fetchDashboard = async (id: number) => {
         try {
-            const res = await axios.get(`${API_BASE_URL}/dashboard/${id}`);
-            setDonations(res.data.total_donations || 0);
-            setHours(res.data.total_hours || 0);
-            setCauses(res.data.causes || []);
-            setMonthlyData(res.data.monthly || []);
-            setCategoryData(res.data.categories || []);
+            // First, calculate local stats from mock donations
+            const localDonations = JSON.parse(localStorage.getItem(`donations_${id}`) || '[]');
+            let localTotal = 0;
+            const causesSet = new Set<string>();
+            const monthlyMap = new Map<string, number>();
+            const categoryMap = new Map<string, number>();
+
+            // Always add a baseline so chart isn't empty
+            monthlyMap.set("Jan", 0);
+            monthlyMap.set("Feb", 0);
+            monthlyMap.set("Mar", 0);
+            monthlyMap.set("Apr", 0);
+
+            localDonations.forEach((d: any) => {
+                localTotal += d.amount;
+                if (d.ngoName) causesSet.add(d.ngoName);
+                
+                const date = new Date(d.date);
+                const month = date.toLocaleString('default', { month: 'short' });
+                monthlyMap.set(month, (monthlyMap.get(month) || 0) + d.amount);
+
+                categoryMap.set(d.category, (categoryMap.get(d.category) || 0) + d.amount);
+            });
+
+            // Try backend fetch, merge if successful, otherwise fallback entirely
+            let backendDonations = 0;
+            let backendHours = 0;
+            let backendCauses: string[] = [];
+            let backendMonthly: any[] = [];
+            let backendCategories: any[] = [];
+
+            try {
+                const res = await axios.get(`${API_BASE_URL}/dashboard/${id}`);
+                backendDonations = res.data.total_donations || 0;
+                backendHours = res.data.total_hours || 0;
+                backendCauses = res.data.causes || [];
+                backendMonthly = res.data.monthly || [];
+                backendCategories = res.data.categories || [];
+            } catch (err) {
+                console.log("Backend not reachable, using local data only.");
+            }
+
+            // Merge local and backend
+            const combinedDonations = Math.max(localTotal, backendDonations);
+            const combinedHours = backendHours > 0 ? backendHours : causesSet.size * 2; // dummy mock logic: 2 hours per cause
+            
+            const finalCauses = Array.from(new Set([...backendCauses, ...Array.from(causesSet)]));
+
+            // Merge monthly
+            backendMonthly.forEach((item: any) => {
+                monthlyMap.set(item.month, Math.max(item.amount, monthlyMap.get(item.month) || 0));
+            });
+            const mergedMonthly = Array.from(monthlyMap.entries()).map(([month, amount]) => ({ month, amount }));
+
+            // Merge categories
+            backendCategories.forEach((item: any) => {
+                categoryMap.set(item.name, Math.max(item.value, categoryMap.get(item.name) || 0));
+            });
+            const mergedCategories: any[] = [];
+            const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#FF69B4", "#48D1CC", "#FFD700"];
+            let i = 0;
+            for (let [name, value] of categoryMap.entries()) {
+                mergedCategories.push({ name, value, color: colors[i % colors.length] });
+                i++;
+            }
+
+            setDonations(combinedDonations);
+            setHours(combinedHours);
+            setCauses(finalCauses);
+            setMonthlyData(mergedMonthly.length ? mergedMonthly : [{ month: "-", amount: 0 }]);
+            setCategoryData(mergedCategories.length ? mergedCategories : [{ name: "None", value: 100, color: "#ccc" }]);
+
         } catch (err) {
-            console.error("Error fetching dashboard:", err);
+            console.error("Critical error building dashboard:", err);
         }
     };
 
