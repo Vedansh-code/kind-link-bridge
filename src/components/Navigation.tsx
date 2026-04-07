@@ -75,9 +75,6 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
               <Link to="/causes" className="text-muted-foreground hover:text-primary transition-colors">
                 Find Causes
               </Link>
-              <Link to="/impact" className="text-muted-foreground hover:text-primary transition-colors">
-                My Impact
-              </Link>
               <Link to="/events" className="text-muted-foreground hover:text-primary transition-colors">
                 Events
               </Link>

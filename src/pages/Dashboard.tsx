@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Navigation } from "@/components/Navigation";
 import {
   BarChart,
@@ -92,6 +93,14 @@ export default function Dashboard() {
     const [userId, setUserId] = useState<number | null>(null);
     const [isProfileComplete, setIsProfileComplete] = useState(true);
 
+    const [donationsList, setDonationsList] = useState<any[]>([]);
+    const [eventsList, setEventsList] = useState<any[]>([]);
+    const [causesList, setCausesList] = useState<any[]>([]);
+
+    const [showDonationsModal, setShowDonationsModal] = useState(false);
+    const [showCausesModal, setShowCausesModal] = useState(false);
+    const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+
     const fetchDashboard = async (id: number) => {
         try {
             // First, calculate local stats from mock donations
@@ -100,6 +109,7 @@ export default function Dashboard() {
             const causesSet = new Set<string>();
             const monthlyMap = new Map<string, number>();
             const categoryMap = new Map<string, number>();
+            const causesMap = new Map();
 
             // Always add a baseline so chart isn't empty
             monthlyMap.set("Jan", 0);
@@ -109,7 +119,10 @@ export default function Dashboard() {
 
             localDonations.forEach((d: any) => {
                 localTotal += d.amount;
-                if (d.ngoName) causesSet.add(d.ngoName);
+                if (d.ngoName) {
+                    causesSet.add(d.ngoName);
+                    if (!causesMap.has(d.ngoName)) causesMap.set(d.ngoName, { name: d.ngoName, date: d.date, type: "Donation" });
+                }
                 
                 const date = new Date(d.date);
                 const month = date.toLocaleString('default', { month: 'short' });
@@ -140,7 +153,10 @@ export default function Dashboard() {
             let localHours = 0;
             localEvents.forEach((e: any) => {
                localHours += (e.hours || 0);
-               if (e.ngoName) causesSet.add(e.ngoName);
+               if (e.ngoName) {
+                   causesSet.add(e.ngoName);
+                   if (!causesMap.has(e.ngoName)) causesMap.set(e.ngoName, { name: e.ngoName, date: e.date, type: "Volunteer" });
+               }
             });
 
             // Merge local and backend
@@ -172,6 +188,10 @@ export default function Dashboard() {
             setCauses(finalCauses);
             setMonthlyData(mergedMonthly.length ? mergedMonthly : [{ month: "-", amount: 0 }]);
             setCategoryData(mergedCategories.length ? mergedCategories : [{ name: "None", value: 100, color: "#ccc" }]);
+
+            setDonationsList(localDonations.reverse());
+            setEventsList(localEvents.reverse());
+            setCausesList(Array.from(causesMap.values()));
 
         } catch (err) {
             console.error("Critical error building dashboard:", err);
@@ -220,6 +240,8 @@ export default function Dashboard() {
         };
     }, []);
 
+    const totalCategoryValue = categoryData.reduce((acc, curr) => acc + curr.value, 0);
+
     return (
         <div className="min-h-screen bg-background">
             <Navigation variant="dashboard" />
@@ -251,7 +273,7 @@ export default function Dashboard() {
 
                 {/* Key Statistics */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <Card className="card-hover">
+                    <Card className="card-hover cursor-pointer" onClick={() => setShowDonationsModal(true)}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
                                 Total Donations
@@ -263,12 +285,12 @@ export default function Dashboard() {
                                 ₹{donations}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Your lifetime contributions
+                                Your lifetime contributions (Click to view)
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card className="card-hover">
+                    <Card className="card-hover cursor-pointer" onClick={() => setShowCausesModal(true)}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
                                 Causes Supported
@@ -280,12 +302,12 @@ export default function Dashboard() {
                                 {causes.length}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                {causes.join(", ") || "No causes yet"}
+                                {causes.length} causes (Click to view)
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card className="card-hover">
+                    <Card className="card-hover cursor-pointer" onClick={() => setShowVolunteerModal(true)}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
                                 Volunteer Hours
@@ -297,7 +319,7 @@ export default function Dashboard() {
                                 {hours} Hours
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                This quarter
+                                This quarter (Click to view)
                             </p>
                         </CardContent>
                     </Card>
@@ -374,10 +396,10 @@ export default function Dashboard() {
                                         ))}
                                     </Pie>
                                     <Tooltip
-                                        formatter={(value) => [
-                                            `${value}%`,
-                                            "Percentage",
-                                        ]}
+                                        formatter={(value: any) => {
+                                            const perc = totalCategoryValue > 0 ? ((parseFloat(value) / totalCategoryValue) * 100).toFixed(1) : 0;
+                                            return [`${perc}% (₹${value})`, "Share"];
+                                        }}
                                     />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -447,6 +469,72 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Modals */}
+      <Dialog open={showDonationsModal} onOpenChange={setShowDonationsModal}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto w-[90vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recent Donations</DialogTitle>
+            <DialogDescription>Your last 15 recorded transactions.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {donationsList.slice(0, 15).length === 0 && <p className="text-muted-foreground text-sm">No donations found.</p>}
+            {donationsList.slice(0, 15).map((d, i) => (
+              <div key={i} className="flex justify-between items-center p-3 border rounded-lg bg-card/50">
+                <div>
+                  <p className="font-semibold text-sm">{d.ngoName}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(d.date).toLocaleDateString()}</p>
+                </div>
+                <div className="font-bold text-primary">₹{d.amount}</div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCausesModal} onOpenChange={setShowCausesModal}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto w-[90vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>Causes Supported</DialogTitle>
+            <DialogDescription>Organizations you've helped or volunteered at.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {causesList.length === 0 && <p className="text-muted-foreground text-sm">No causes found.</p>}
+            {causesList.map((c, i) => (
+              <div key={i} className="flex justify-between items-center p-3 border rounded-lg bg-card/50">
+                <div>
+                  <p className="font-semibold text-sm">{c.name}</p>
+                  <p className="text-xs text-muted-foreground">Since {new Date(c.date).toLocaleDateString()}</p>
+                </div>
+                <div className="text-xs bg-muted px-2 py-1 rounded">{c.type}</div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showVolunteerModal} onOpenChange={setShowVolunteerModal}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto w-[90vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>Volunteer Events</DialogTitle>
+            <DialogDescription>Your scheduled volunteer sessions.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {eventsList.length === 0 && <p className="text-muted-foreground text-sm">No events found.</p>}
+            {eventsList.map((e, i) => (
+              <div key={i} className="flex justify-between items-center p-3 border rounded-lg bg-card/50">
+                <div>
+                  <p className="font-semibold text-sm">{e.ngoName}</p>
+                  <p className="text-xs font-medium">{e.eventType || "Event"} - {e.timeSlot}</p>
+                  <p className="text-xs text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString() : 'No date'}</p>
+                </div>
+                <div className="font-bold text-primary">{e.hours} Hours</div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

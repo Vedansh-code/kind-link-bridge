@@ -12,7 +12,6 @@ import NGODetail from "./pages/NGODetail";
 import Payment from "./pages/Payment";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
-import Impact from "@/pages/Impact";
 import Causes from "./pages/Causes";
 import Events from "./pages/Events";
 import Login from "./pages/Login";
@@ -41,7 +40,6 @@ const App = () => (
 
           {/* ADDED a placeholder for your missing routes */}
           <Route path="/causes" element={<Causes />} />
-          <Route path="/impact" element={<Impact />} />
           <Route path="/events" element={<Events />} />
           <Route path="/profile" element={<Profile />} />
 
