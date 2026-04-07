@@ -25,11 +25,17 @@ export default function Profile() {
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
+    username: "",
+    email: "",
     phone: "",
     age: "",
     gender: "",
     categories: [] as string[],
     location: "",
+    houseNumber: "",
+    street: "",
+    landmark: "",
+    pincode: "",
     minDonation: "",
     maxDonation: "",
     preferredType: "both",
@@ -46,7 +52,19 @@ export default function Profile() {
         // Load existing profile if it exists (simulate or fetch from local config)
         const profileData = localStorage.getItem(`profile_${userData.id}`);
         if (profileData) {
-          setFormData(JSON.parse(profileData));
+          const parsedProfile = JSON.parse(profileData);
+          setFormData((prev) => ({
+            ...prev,
+            ...parsedProfile,
+            username: parsedProfile.username !== undefined ? parsedProfile.username : userData.username || "",
+            email: parsedProfile.email !== undefined ? parsedProfile.email : userData.email || "",
+          }));
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            username: userData.username || "",
+            email: userData.email || "",
+          }));
         }
       } catch (err) {
         console.error("Error parsing user data", err);
@@ -74,10 +92,17 @@ export default function Profile() {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const userData = JSON.parse(storedUser);
+      
+      // Update global user object
+      userData.username = formData.username;
+      userData.email = formData.email;
+      localStorage.setItem("user", JSON.stringify(userData));
+      setUsername(formData.username);
+
       localStorage.setItem(`profile_${userData.id}`, JSON.stringify(formData));
       toast({
         title: "Profile saved successfully",
-        description: "Your preferences have been updated.",
+        description: "Your preferences and personal details have been updated.",
       });
       navigate("/dashboard");
     }
@@ -103,6 +128,27 @@ export default function Profile() {
               <p className="text-sm text-muted-foreground">Tell us a bit more about yourself.</p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    placeholder="Your username"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Your email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input
@@ -172,19 +218,66 @@ export default function Profile() {
             </div>
 
             {/* Location */}
-            <div className="space-y-3">
-              <Label className="text-lg font-semibold border-b pb-2 flex">3. Location</Label>
-              <p className="text-sm text-muted-foreground">Select your primary city for local impact opportunities.</p>
-              <Select value={formData.location} onValueChange={(val) => setFormData({ ...formData, location: val })}>
-                <SelectTrigger className="w-full md:w-[300px]">
-                  <SelectValue placeholder="Select a city" />
-                </SelectTrigger>
-                <SelectContent>
-                  {INDIAN_CITIES.map((city) => (
-                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-3 mt-8">
+              <Label className="text-lg font-semibold border-b pb-2 flex">3. Address & Location</Label>
+              <p className="text-sm text-muted-foreground">Select your primary city and enter your address details.</p>
+              
+              <div className="space-y-5 mt-2">
+                <div className="space-y-2">
+                  <Label>City</Label>
+                  <Select value={formData.location} onValueChange={(val) => setFormData({ ...formData, location: val })}>
+                    <SelectTrigger className="w-full md:w-[300px]">
+                      <SelectValue placeholder="Select a city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDIAN_CITIES.map((city) => (
+                        <SelectItem key={city} value={city}>{city}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.location && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                    <div className="space-y-2">
+                      <Label htmlFor="houseNumber">House / Flat Number</Label>
+                      <Input
+                        id="houseNumber"
+                        placeholder="e.g. Flat 101, A Wing"
+                        value={formData.houseNumber}
+                        onChange={(e) => setFormData({ ...formData, houseNumber: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="street">Street / Road Name</Label>
+                      <Input
+                        id="street"
+                        placeholder="e.g. M.G. Road"
+                        value={formData.street}
+                        onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="landmark">Landmark (Optional)</Label>
+                      <Input
+                        id="landmark"
+                        placeholder="e.g. Near City Hospital"
+                        value={formData.landmark}
+                        onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pincode">Pincode</Label>
+                      <Input
+                        id="pincode"
+                        placeholder="e.g. 400001"
+                        value={formData.pincode}
+                        onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Donation Range */}
