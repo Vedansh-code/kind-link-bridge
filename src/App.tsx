@@ -21,6 +21,8 @@ import NGODashboard from "./pages/NGODashboard";
 import Profile from "./pages/Profile";
 
 
+import SmartDonation from "./pages/SmartDonation";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -42,6 +44,7 @@ const App = () => (
           <Route path="/causes" element={<Causes />} />
           <Route path="/events" element={<Events />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/smart-donation" element={<SmartDonation />} />
 
           <Route path="/ngo/:id" element={<NGODetail />} />
           <Route path="/payment" element={<Payment />} />
