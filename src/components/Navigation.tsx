@@ -72,7 +72,7 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
               <Link to="/dashboard" className="text-foreground hover:text-primary transition-colors">
                 Dashboard
               </Link>
-              <Link to="/smart-donation" className="text-primary font-medium border-b-2 border-primary pb-1">
+              <Link to="/smart-donation" className="text-muted-foreground hover:text-primary transition-colors">
                 Smart Donation
               </Link>
               <Link to="/causes" className="text-muted-foreground hover:text-primary transition-colors">
