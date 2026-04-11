@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,6 +29,13 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+const INDIAN_CITIES = [
+  "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad",
+  "Chennai", "Kolkata", "Surat", "Pune", "Jaipur", "Lucknow",
+  "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam",
+  "Pimpri-Chinchwad", "Patna", "Vadodara"
+].sort();
+
 // ... [Schemas and Categories remain identical to your original code] ...
 const childSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -44,7 +52,11 @@ const formSchema = z.object({
   tagline: z.string().optional(),
   isVerified: z.boolean(),
   verificationDoc: z.any().optional(),
-  officeAddress: z.string().min(1, "Office address is required"),
+  location: z.string().min(1, "City is required"),
+  houseNumber: z.string().min(1, "House number is required"),
+  street: z.string().min(1, "Street is required"),
+  landmark: z.string().optional(),
+  pincode: z.string().min(6, "Pincode is required"),
   about: z.string().min(10, "Please provide at least 10 characters"),
   children: z.array(childSchema).min(1, "At least one child entry is required"),
   category: z.string().min(1, "Category is required"),
@@ -67,12 +79,14 @@ const categories = ["Education", "Healthcare", "Environment", "Child Welfare", "
 
 const NGORegister = () => {
   const navigate = useNavigate();
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   const {
     register,
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -82,7 +96,11 @@ const NGORegister = () => {
       orgName: "",
       tagline: "",
       isVerified: false,
-      officeAddress: "",
+      location: "",
+      houseNumber: "",
+      street: "",
+      landmark: "",
+      pincode: "",
       about: "",
       children: [{ name: "", age: 0, interests: "", currentNeeds: "" }],
       category: "",
@@ -99,6 +117,48 @@ const NGORegister = () => {
   });
 
   const isVerified = watch("isVerified");
+  const locationWatch = watch("location");
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser.");
+      return;
+    }
+    
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await response.json();
+          
+          if (data && data.address) {
+            const foundCity = INDIAN_CITIES.find(c => 
+              data.address.city?.includes(c) || 
+              data.address.state_district?.includes(c) ||
+              c.includes(data.address.city)
+            );
+            
+            if (foundCity) setValue("location", foundCity, { shouldValidate: true });
+            if (data.address.postcode) setValue("pincode", data.address.postcode, { shouldValidate: true });
+            const streetStr = data.address.road || data.address.suburb || data.address.neighbourhood;
+            if (streetStr) setValue("street", streetStr, { shouldValidate: true });
+            
+            toast.success("Location fetched and fields updated.");
+          }
+        } catch (error) {
+          toast.error("Could not fetch address details.");
+        } finally {
+          setGettingLocation(false);
+        }
+      },
+      (error) => {
+        setGettingLocation(false);
+        toast.error("Permission denied or could not get location.");
+      }
+    );
+  };
 
   const onSubmit = (data: FormData) => {
     console.log("Form submitted:", data);
@@ -232,26 +292,87 @@ const NGORegister = () => {
             </div>
           </section>
 
-          {/* About & Location Combined Grid */}
-          <div className="grid gap-8 sm:grid-cols-2">
+          {/* Location and Mission Sections */}
+          <div className="space-y-8">
             <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-4">
-                <MapPin className="w-5 h-5 text-emerald-600" />
-                Main Location
-              </h2>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Office Address / City *</label>
-                <Input
-                  {...register("officeAddress")}
-                  placeholder="Enter full address"
-                  className={cn("focus-visible:ring-emerald-500", errors.officeAddress && "border-red-500")}
-                />
-                {errors.officeAddress && <p className="text-xs text-red-500">{errors.officeAddress.message}</p>}
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-slate-100 pb-4">
+                <h2 className="flex items-center gap-2 font-bold text-slate-800">
+                  <MapPin className="w-5 h-5 text-emerald-600" />
+                  Address & Location
+                </h2>
+                <Button variant="outline" size="sm" type="button" onClick={handleGetLocation} disabled={gettingLocation}>
+                  <MapPin className="w-4 h-4 mr-2" />
+                  {gettingLocation ? "Locating..." : "Use Current Location"}
+                </Button>
+              </div>
+              <p className="text-sm text-slate-500 mb-6">Select your primary city and enter your address details.</p>
+              
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">City *</label>
+                  <Controller
+                    name="location"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className={cn("w-full md:w-[300px]", errors.location && "border-red-500")}>
+                          <SelectValue placeholder="Select a city" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {INDIAN_CITIES.map((city) => (
+                            <SelectItem key={city} value={city}>{city}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.location && <p className="text-xs text-red-500 font-medium">{errors.location.message}</p>}
+                </div>
+
+                {locationWatch && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">House / Flat Number *</label>
+                      <Input
+                        {...register("houseNumber")}
+                        placeholder="e.g. Flat 101, A Wing"
+                        className={cn("focus-visible:ring-emerald-500 bg-slate-50/50", errors.houseNumber && "border-red-500")}
+                      />
+                      {errors.houseNumber && <p className="text-xs text-red-500 font-medium">{errors.houseNumber.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Street / Road Name *</label>
+                      <Input
+                        {...register("street")}
+                        placeholder="e.g. M.G. Road"
+                        className={cn("focus-visible:ring-emerald-500 bg-slate-50/50", errors.street && "border-red-500")}
+                      />
+                      {errors.street && <p className="text-xs text-red-500 font-medium">{errors.street.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Landmark (Optional)</label>
+                      <Input
+                        {...register("landmark")}
+                        placeholder="e.g. Near City Hospital"
+                        className="focus-visible:ring-emerald-500 bg-slate-50/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Pincode *</label>
+                      <Input
+                        {...register("pincode")}
+                        placeholder="e.g. 400001"
+                        className={cn("focus-visible:ring-emerald-500 bg-slate-50/50", errors.pincode && "border-red-500")}
+                      />
+                      {errors.pincode && <p className="text-xs text-red-500 font-medium">{errors.pincode.message}</p>}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
             <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-fade-in" style={{ animationDelay: "0.25s" }}>
-              <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-4">
+              <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-4 border-b border-slate-100 pb-4">
                 <Info className="w-5 h-5 text-emerald-600" />
                 Mission
               </h2>
@@ -260,9 +381,10 @@ const NGORegister = () => {
                 <Textarea
                   {...register("about")}
                   placeholder="Explain your NGO's primary goals..."
-                  rows={2}
-                  className={cn("focus-visible:ring-emerald-500", errors.about && "border-red-500")}
+                  rows={4}
+                  className={cn("focus-visible:ring-emerald-500 bg-slate-50/50", errors.about && "border-red-500")}
                 />
+                {errors.about && <p className="text-xs text-red-500 font-medium">{errors.about.message}</p>}
               </div>
             </section>
           </div>
