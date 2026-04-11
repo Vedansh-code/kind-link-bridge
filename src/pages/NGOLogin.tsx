@@ -90,38 +90,6 @@ const NGOLogin: React.FC = () => {
                     </Button>
                 </form>
 
-                <div className="relative my-10 flex items-center">
-                    <div className="flex-grow border-t border-slate-100"></div>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={() => {
-                        localStorage.setItem('pending_role', 'ngo');
-                        window.open(`${BACKEND_URL}/auth/google?role=ngo`, "_self");
-                    }}
-                    className="flex items-center justify-center w-full py-3 font-medium transition-colors bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:shadow-sm"
-                >
-                    <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
-                        <path
-                            fill="#EA4335"
-                            d="M24 12.27c0-.85-.07-1.66-.21-2.44H12v4.62h6.72c-.29 1.58-1.18 2.92-2.52 3.81v3.17h4.08c2.39-2.2 3.72-5.44 3.72-9.16z"
-                        />
-                        <path
-                            fill="#FBBC05"
-                            d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-4.08-3.17c-1.13.75-2.57 1.2-3.85 1.2-2.97 0-5.49-2.01-6.39-4.7H1.53v3.23C3.51 21.82 7.46 24 12 24z"
-                        />
-                        <path
-                            fill="#34A853"
-                            d="M5.61 14.42c-.24-.71-.37-1.46-.37-2.42s.13-1.71.37-2.42V6.35H1.53c-.8 1.6-1.26 3.4-1.26 5.3s.46 3.7 1.26 5.3l4.08-3.23z"
-                        />
-                        <path
-                            fill="#4285F4"
-                            d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.45-3.45C17.95 1.08 15.24 0 12 0 7.46 0 3.51 2.18 1.53 5.58l4.08 3.23c.9-2.69 3.42-4.7 6.39-4.7z"
-                        />
-                    </svg>
-                    Continue with Google
-                </button>
 
                 <p className="mt-8 text-center text-sm text-slate-500">
                     Not a partner yet? <Link to="/ngo-register" className="text-emerald-600 font-bold hover:text-emerald-700 transition-colors">Register Organization</Link>
