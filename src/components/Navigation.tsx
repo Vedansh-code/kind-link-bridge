@@ -41,6 +41,89 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
     }
   }, []);
 
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+
+  useEffect(() => {
+    const generateNotifications = () => {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) return;
+      
+      try {
+        const userData = JSON.parse(storedUser);
+        const userId = userData.id || userData._id || 'default';
+        const newNotifications: any[] = [];
+        const now = new Date();
+
+        // 1. Donations
+        const donationsKey = `donations_${userId}`;
+        const donations = JSON.parse(localStorage.getItem(donationsKey) || "[]");
+        donations.forEach((d: any, i: number) => {
+           newNotifications.push({
+             id: `don_${i}`,
+             message: `You donated ₹${d.amount} to ${d.ngoName} 🎓`,
+             date: new Date(d.date || now).getTime()
+           });
+        });
+
+        // 2 & 3. Organized Events and upcoming event reminders
+        const eventsKey = `events_${userId}`;
+        const events = JSON.parse(localStorage.getItem(eventsKey) || "[]");
+        events.forEach((e: any, i: number) => {
+           // Whenever organize an event
+           newNotifications.push({
+             id: `evt_org_${i}`,
+             message: `You scheduled a ${e.eventType || 'event'} at ${e.ngoName} 📅`,
+             date: new Date(e.date || now).getTime() - 1000 // Slightly older so reminders pop up first
+           });
+
+           if (e.date) {
+               const eventDate = new Date(e.date);
+               if (!isNaN(eventDate.getTime())) {
+                   const timeDiff = eventDate.getTime() - now.getTime();
+                   const daysDiff = timeDiff / (1000 * 3600 * 24);
+                   
+                   // A day before any future event (between 0 and 2 days away)
+                   if (daysDiff > 0 && daysDiff <= 2) {
+                       newNotifications.push({
+                         id: `evt_rem_${i}`,
+                         message: `Reminder: Your event at ${e.ngoName} is tomorrow! ⏰`,
+                         date: now.getTime() // Mark as very recent
+                       });
+                   }
+               }
+           }
+        });
+
+        // Add a default if empty
+        if (newNotifications.length === 0) {
+            newNotifications.push({
+                id: 'default_1',
+                message: 'Your impact report is ready 📊',
+                date: now.getTime() - 100000
+            });
+        }
+
+        // Sort descending by date
+        newNotifications.sort((a, b) => b.date - a.date);
+
+        // Keep top limit
+        const topNotifs = newNotifications.slice(0, 5);
+        setNotifications(topNotifs);
+        
+        // We consider them unread if there are dynamic actions
+        setHasUnreadNotifications(events.length > 0 || donations.length > 0);
+      } catch (err) {
+         console.error("Error generating notifications", err);
+      }
+    };
+
+    generateNotifications();
+    // Refresh periodically in case of additions
+    const interval = setInterval(generateNotifications, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogout = async () => {
       try {
           await fetch(`${BACKEND_URL}/api/auth/logout`, {
@@ -87,23 +170,28 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
           <div className="flex items-center space-x-4">
             {/* Notifications */}
             <DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" size="sm" className="relative">
-      <Bell className="h-5 w-5" />
-      {/* Red dot if there are new notifications */}
-      <span className="absolute -top-1 -right-1 h-3 w-3 bg-secondary rounded-full text-xs"></span>
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent align="end" className="w-64">
-    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-    <DropdownMenuSeparator />
-    <DropdownMenuItem>You donated ₹500 to Education Fund 🎓</DropdownMenuItem>
-    <DropdownMenuItem>New event: Beach Cleanup this Sunday 🌊</DropdownMenuItem>
-    <DropdownMenuItem>Your impact report is ready 📊</DropdownMenuItem>
-    <DropdownMenuSeparator />
-    
-  </DropdownMenuContent>
-</DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="relative" onClick={() => setHasUnreadNotifications(false)}>
+                  <Bell className="h-5 w-5" />
+                  {hasUnreadNotifications && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-secondary rounded-full text-xs"></span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 max-h-[300px] overflow-y-auto">
+                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications.map((notif) => (
+                  <DropdownMenuItem key={notif.id} className="text-sm cursor-default">
+                    {notif.message}
+                  </DropdownMenuItem>
+                ))}
+                {notifications.length === 0 && (
+                   <DropdownMenuItem className="text-muted-foreground">No new notifications</DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* User Dropdown */}
             <DropdownMenu>
