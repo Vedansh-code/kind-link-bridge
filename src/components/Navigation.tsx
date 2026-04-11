@@ -14,7 +14,7 @@ const BACKEND_URL = "https://kind-link-bridge-backend-1.onrender.com";
 
 
 interface NavigationProps {
-    variant?: "landing" | "dashboard";
+  variant?: "landing" | "dashboard";
 }
 
 export function Navigation({ variant = "landing" }: NavigationProps) {
@@ -22,7 +22,7 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
     try {
       const stored = localStorage.getItem("user");
       if (stored) return JSON.parse(stored).username || "User";
-    } catch (e) {}
+    } catch (e) { }
     return "User";
   });
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
     const generateNotifications = () => {
       const storedUser = localStorage.getItem("user");
       if (!storedUser) return;
-      
+
       try {
         const userData = JSON.parse(storedUser);
         const userId = userData.id || userData._id || 'default';
@@ -59,49 +59,49 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
         const donationsKey = `donations_${userId}`;
         const donations = JSON.parse(localStorage.getItem(donationsKey) || "[]");
         donations.forEach((d: any, i: number) => {
-           newNotifications.push({
-             id: `don_${i}`,
-             message: `You donated ₹${d.amount} to ${d.ngoName} 🎓`,
-             date: new Date(d.date || now).getTime()
-           });
+          newNotifications.push({
+            id: `don_${i}`,
+            message: `You donated ₹${d.amount} to ${d.ngoName} 🎓`,
+            date: new Date(d.date || now).getTime()
+          });
         });
 
         // 2 & 3. Organized Events and upcoming event reminders
         const eventsKey = `events_${userId}`;
         const events = JSON.parse(localStorage.getItem(eventsKey) || "[]");
         events.forEach((e: any, i: number) => {
-           // Whenever organize an event
-           newNotifications.push({
-             id: `evt_org_${i}`,
-             message: `You scheduled a ${e.eventType || 'event'} at ${e.ngoName} 📅`,
-             date: new Date(e.date || now).getTime() - 1000 // Slightly older so reminders pop up first
-           });
+          // Whenever organize an event
+          newNotifications.push({
+            id: `evt_org_${i}`,
+            message: `You scheduled a ${e.eventType || 'event'} at ${e.ngoName} 📅`,
+            date: new Date(e.date || now).getTime() - 1000 // Slightly older so reminders pop up first
+          });
 
-           if (e.date) {
-               const eventDate = new Date(e.date);
-               if (!isNaN(eventDate.getTime())) {
-                   const timeDiff = eventDate.getTime() - now.getTime();
-                   const daysDiff = timeDiff / (1000 * 3600 * 24);
-                   
-                   // A day before any future event (between 0 and 2 days away)
-                   if (daysDiff > 0 && daysDiff <= 2) {
-                       newNotifications.push({
-                         id: `evt_rem_${i}`,
-                         message: `Reminder: Your event at ${e.ngoName} is tomorrow! ⏰`,
-                         date: now.getTime() // Mark as very recent
-                       });
-                   }
-               }
-           }
+          if (e.date) {
+            const eventDate = new Date(e.date);
+            if (!isNaN(eventDate.getTime())) {
+              const timeDiff = eventDate.getTime() - now.getTime();
+              const daysDiff = timeDiff / (1000 * 3600 * 24);
+
+              // A day before any future event (between 0 and 2 days away)
+              if (daysDiff > 0 && daysDiff <= 2) {
+                newNotifications.push({
+                  id: `evt_rem_${i}`,
+                  message: `Reminder: Your event at ${e.ngoName} is tomorrow! ⏰`,
+                  date: now.getTime() // Mark as very recent
+                });
+              }
+            }
+          }
         });
 
         // Add a default if empty
         if (newNotifications.length === 0) {
-            newNotifications.push({
-                id: 'default_1',
-                message: 'Your impact report is ready 📊',
-                date: now.getTime() - 100000
-            });
+          newNotifications.push({
+            id: 'default_1',
+            message: 'Your impact report is ready 📊',
+            date: now.getTime() - 100000
+          });
         }
 
         // Sort descending by date
@@ -110,11 +110,11 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
         // Keep top limit
         const topNotifs = newNotifications.slice(0, 5);
         setNotifications(topNotifs);
-        
+
         // We consider them unread if there are dynamic actions
         setHasUnreadNotifications(events.length > 0 || donations.length > 0);
       } catch (err) {
-         console.error("Error generating notifications", err);
+        console.error("Error generating notifications", err);
       }
     };
 
@@ -125,18 +125,18 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
   }, []);
 
   const handleLogout = async () => {
-      try {
-          await fetch(`${BACKEND_URL}/api/auth/logout`, {
-              method: "POST",
-              credentials: "include", // 🔴 REQUIRED
-          });
-      } catch (err) {
-          console.error("Logout request failed", err);
-      } finally {
-          // Clean frontend state
-          localStorage.removeItem("user");
-          navigate("/"); // or "/login"
-      }
+    try {
+      await fetch(`${BACKEND_URL}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include", // 🔴 REQUIRED
+      });
+    } catch (err) {
+      console.error("Logout request failed", err);
+    } finally {
+      // Clean frontend state
+      localStorage.removeItem("user");
+      navigate("/"); // or "/login"
+    }
   };
 
 
@@ -152,7 +152,7 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
               <span className="font-bold text-xl text-foreground">HopeConnect</span>
             </Link>
             <div className="hidden md:flex space-x-6">
-              <Link to="/dashboard" className="text-foreground hover:text-primary transition-colors">
+              <Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
                 Dashboard
               </Link>
               <Link to="/smart-donation" className="text-muted-foreground hover:text-primary transition-colors">
@@ -187,7 +187,7 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
                   </DropdownMenuItem>
                 ))}
                 {notifications.length === 0 && (
-                   <DropdownMenuItem className="text-muted-foreground">No new notifications</DropdownMenuItem>
+                  <DropdownMenuItem className="text-muted-foreground">No new notifications</DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
               </DropdownMenuContent>
@@ -221,19 +221,19 @@ export function Navigation({ variant = "landing" }: NavigationProps) {
     );
   }
 
-    // Landing variant
-    return (
-        <nav className="absolute top-0 left-0 right-0 z-50 bg-transparent">
-            <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                <Link to="/" className="flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">H</span>
-                    </div>
-                    <span className="font-bold text-xl text-white">
-                        HopeConnect
-                    </span>
-                </Link>
-            </div>
-        </nav>
-    );
+  // Landing variant
+  return (
+    <nav className="absolute top-0 left-0 right-0 z-50 bg-transparent">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <Link to="/" className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
+            <span className="text-white font-bold text-lg">H</span>
+          </div>
+          <span className="font-bold text-xl text-white">
+            HopeConnect
+          </span>
+        </Link>
+      </div>
+    </nav>
+  );
 }
