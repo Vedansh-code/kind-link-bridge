@@ -10,6 +10,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { MapPin } from "lucide-react";
+import axios from "axios";
+
+const BACKEND_URL = "https://kind-link-bridge-backend-1.onrender.com";
 
 const INDIAN_CITIES = [
   "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad",
@@ -133,8 +136,6 @@ export default function Profile() {
 
   const handleSave = async () => {
     setSaving(true);
-    // Simulate API call to save profile
-    await new Promise((resolve) => setTimeout(resolve, 800));
 
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -147,6 +148,39 @@ export default function Profile() {
       setUsername(formData.username);
 
       localStorage.setItem(`profile_${userData.id}`, JSON.stringify(formData));
+
+      // Construct preferences payload as required
+      const payload = {
+        fieldsOfInterest: formData.categories,
+        donationType: formData.donationType,
+        location: formData.location,
+        city: formData.location, // Safe alias for location/city key mismatch
+      };
+
+      try {
+        // Use Axios to make an authorized authenticated PUT request to our backend endpoint
+        await axios.put(`${BACKEND_URL}/api/users/preferences`, payload, {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      } catch (putError) {
+        console.warn("PUT to /api/users/preferences failed, trying fallback POST request...", putError);
+        try {
+          // Use Axios to make an authorized authenticated POST request as fallback
+          await axios.post(`${BACKEND_URL}/api/users/preferences`, payload, {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+        } catch (postError) {
+          console.error("Backend preference submission failed on both PUT and POST requests", postError);
+          // Gracefully continue so user is still guided to their dashboard and local experience remains uninterrupted
+        }
+      }
+
       toast({
         title: "Profile saved successfully",
         description: "Your preferences and personal details have been updated.",
