@@ -12,7 +12,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { MapPin } from "lucide-react";
 import axios from "axios";
 
-const BACKEND_URL = "https://kind-link-bridge-backend-1.onrender.com";
+const getBackendUrl = () => {
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return "http://localhost:5000";
+  }
+  return "https://kind-link-bridge-backend-1.onrender.com";
+};
+const BACKEND_URL = getBackendUrl();
 
 const INDIAN_CITIES = [
   "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad",
@@ -139,53 +145,73 @@ export default function Profile() {
 
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      
-      // Update global user object
-      userData.username = formData.username;
-      userData.email = formData.email;
-      localStorage.setItem("user", JSON.stringify(userData));
-      setUsername(formData.username);
-
-      localStorage.setItem(`profile_${userData.id}`, JSON.stringify(formData));
-
-      // Construct preferences payload as required
-      const payload = {
-        fieldsOfInterest: formData.categories,
-        donationType: formData.donationType,
-        location: formData.location,
-        city: formData.location, // Safe alias for location/city key mismatch
-      };
-
       try {
-        // Use Axios to make an authorized authenticated PUT request to our backend endpoint
-        await axios.put(`${BACKEND_URL}/api/users/preferences`, payload, {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-      } catch (putError) {
-        console.warn("PUT to /api/users/preferences failed, trying fallback POST request...", putError);
-        try {
-          // Use Axios to make an authorized authenticated POST request as fallback
-          await axios.post(`${BACKEND_URL}/api/users/preferences`, payload, {
-            withCredentials: true,
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-        } catch (postError) {
-          console.error("Backend preference submission failed on both PUT and POST requests", postError);
-          // Gracefully continue so user is still guided to their dashboard and local experience remains uninterrupted
-        }
-      }
+        const userData = JSON.parse(storedUser);
+        
+        // Update global user object
+        userData.username = formData.username;
+        userData.email = formData.email;
+        localStorage.setItem("user", JSON.stringify(userData));
+        setUsername(formData.username);
 
+        localStorage.setItem(`profile_${userData.id}`, JSON.stringify(formData));
+
+        // Construct request payload exactly matching the backend schema
+        const payload = {
+          fieldsOfInterest: formData.categories,
+          donationType: formData.donationType,
+          location: formData.location
+        };
+
+        // Retrieve JWT token if available in localStorage or user session object
+        const token = localStorage.getItem("token") || localStorage.getItem("jwt") || userData.token || userData.jwt;
+
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const requestConfig = {
+          withCredentials: true,
+          headers,
+        };
+
+        try {
+          // Use Axios to make an authorized authenticated PUT request to our backend profile endpoint
+          await axios.put(`${BACKEND_URL}/api/users/profile`, payload, requestConfig);
+        } catch (putError) {
+          console.warn("PUT to /api/users/profile failed, trying fallback POST request...", putError);
+          try {
+            // Use Axios to make an authorized authenticated POST request as fallback
+            await axios.post(`${BACKEND_URL}/api/users/profile`, payload, requestConfig);
+          } catch (postError) {
+            console.error("Backend profile update failed on both PUT and POST requests", postError);
+          }
+        }
+
+        toast({
+          title: "Profile saved successfully",
+          description: "Your preferences and personal details have been updated.",
+        });
+        navigate("/dashboard");
+      } catch (err) {
+        console.error("Error updating profile preferences", err);
+        toast({
+          title: "Error",
+          description: "Failed to parse user session or update profile.",
+          variant: "destructive"
+        });
+      }
+    } else {
       toast({
-        title: "Profile saved successfully",
-        description: "Your preferences and personal details have been updated.",
+        title: "Authentication Required",
+        description: "Please sign in to update your profile.",
+        variant: "destructive"
       });
-      navigate("/dashboard");
+      navigate("/login");
     }
     setSaving(false);
   };
