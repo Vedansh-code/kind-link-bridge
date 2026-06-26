@@ -12,13 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { MapPin } from "lucide-react";
 import axios from "axios";
 
-const getBackendUrl = () => {
-  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-    return "http://localhost:5000";
-  }
-  return "https://kind-link-bridge-backend-1.onrender.com";
-};
-const BACKEND_URL = getBackendUrl();
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
 
 const INDIAN_CITIES = [
   "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad",

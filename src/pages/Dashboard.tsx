@@ -24,57 +24,16 @@ import { io, Socket } from "socket.io-client";
 import { checkAuth } from "../lib/auth";
 
 // 🔑 API Base URL (local vs deployed)
-const API_BASE_URL = "https://kind-link-bridge-backend-1.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
 
-const featuredCauses = [
-  {
-    id: 1,
-    name: "Hope Foundation",
-    mission:
-      "Empowering children through quality education in underserved communities",
-    image: "🎓",
-    location: "Delhi",
-  },
-  {
-    id: 2,
-    name: "Sunshine Home",
-    mission:
-      "Building sustainable communities through environmental initiatives",
-    image: "🌱",
-    location: "Bangalore",
-  },
-  {
-    id: 3,
-    name: "Little Steps",
-    mission: "Providing essential medical care to rural communities",
-    image: "🏥",
-    location: "Chennai",
-  },
-  {
-    id: 4,
-    name: "Smile Care Trust",
-    mission:
-      "Empowering children through quality education in underserved communities",
-    image: "🎓",
-    location: "Mumbai",
-  },
-  {
-    id: 5,
-    name: "Green Future Initiative",
-    mission:
-      "Empowering children through quality education in underserved communities",
-    image: "🎓",
-    location: "Delhi",
-  },
-  {
-    id: 6,
-    name: "Health for All",
-    mission:
-      "Empowering children through quality education in underserved communities",
-    image: "🎓",
-    location: "Kolkata",
-  },
-];
+const getIconForCategory = (category: string) => {
+  const lowercaseCat = category?.toLowerCase() || '';
+  if (lowercaseCat.includes("education")) return "🎓";
+  if (lowercaseCat.includes("environment")) return "🌱";
+  if (lowercaseCat.includes("health")) return "🏥";
+  if (lowercaseCat.includes("child")) return "🧸";
+  return "🏢";
+};
 
 export default function Dashboard() {
     const [username, setUsername] = useState(() => {
@@ -100,6 +59,19 @@ export default function Dashboard() {
     const [showDonationsModal, setShowDonationsModal] = useState(false);
     const [showCausesModal, setShowCausesModal] = useState(false);
     const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+    const [dbNgos, setDbNgos] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchNgos = async () => {
+            try {
+                const res = await axios.get(`${API_BASE_URL}/api/ngos`);
+                setDbNgos(res.data);
+            } catch (err) {
+                console.error("Failed to load NGOs from server", err);
+            }
+        };
+        fetchNgos();
+    }, []);
 
     const fetchDashboard = async (id: number) => {
         try {
@@ -435,30 +407,30 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {featuredCauses.map((cause) => (
+              {dbNgos.map((cause) => (
                 <Card
-                  key={cause.id}
+                  key={cause._id}
                   className="card-hover border-0 bg-accent/50"
                 >
                   <CardContent className="p-6">
                     <div className="text-4xl mb-4 text-center">
-                      {cause.image}
+                      {getIconForCategory(cause.category)}
                     </div>
                     <h3 className="font-semibold text-lg mb-2 text-foreground">
                       {cause.name}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-                      {cause.mission}
+                    <p className="text-sm text-muted-foreground mb-3 leading-relaxed line-clamp-3">
+                      {cause.description}
                     </p>
                     <p className="text-xs text-muted-foreground mb-4">
-                      📍 {cause.location}
+                      📍 {cause.city}
                     </p>
                     <Button
                       asChild
                       variant="default"
                       className="w-full"
                     >
-                      <Link to={`/ngo/${cause.id}`}>
+                      <Link to={`/ngo/${cause._id}`}>
                         Learn More
                       </Link>
                     </Button>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,13 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Navigation } from "@/components/Navigation";
-import { MapPin, CheckCircle, Heart } from "lucide-react";
+import { MapPin, CheckCircle, Heart, Loader2 } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
-import { ngos } from "@/data/ngos";
+import { toast } from "sonner";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
 
 export default function NGODetail() {
     const { id } = useParams();
-    const ngo = ngos.find((n) => String(n.id) === id);
+    const [ngo, setNgo] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
     const [selectedCategory, setSelectedCategory] = useState("");
     const [donationItems, setDonationItems] = useState("");
@@ -20,6 +23,30 @@ export default function NGODetail() {
 
     const categories = ["Education", "Health", "Food", "Arts", "Shelter"];
     const presetAmounts = ["₹500", "₹1,000", "₹2,500", "₹5,000"];
+
+    useEffect(() => {
+        const fetchNgo = async () => {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/ngos/${id}`);
+                if (!res.ok) throw new Error("Failed to fetch NGO details");
+                const data = await res.json();
+                setNgo(data);
+            } catch (err) {
+                toast.error("Failed to load NGO details");
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (id) fetchNgo();
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center text-xl">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     if (!ngo)
         return (
@@ -29,10 +56,12 @@ export default function NGODetail() {
         );
 
     // Helper to format impact key labels
-    const formatLabel = (key) =>
+    const formatLabel = (key: string) =>
         key
             .replace(/([A-Z])/g, " $1")
             .replace(/^./, (str) => str.toUpperCase());
+
+    const childSpotlight = ngo.childrenInCare && ngo.childrenInCare.length > 0 ? ngo.childrenInCare[0] : null;
 
     return (
         <div className="min-h-screen bg-background">
@@ -47,7 +76,7 @@ export default function NGODetail() {
                         </h1>
                         <p className="text-xl opacity-90 mb-6">{ngo.tagline}</p>
                         <div className="flex items-center space-x-4">
-                            {ngo.verified && (
+                            {ngo.isVerified && (
                                 <Badge
                                     variant="secondary"
                                     className="bg-white/20 text-white border-white/30"
@@ -58,7 +87,7 @@ export default function NGODetail() {
                             )}
                             <div className="flex items-center space-x-1 text-white/80">
                                 <MapPin className="h-4 w-4" />
-                                <span>{ngo.locations}</span>
+                                <span>{ngo.city}</span>
                             </div>
                         </div>
                     </div>
@@ -76,41 +105,43 @@ export default function NGODetail() {
                                 <CardTitle>About Us</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-muted-foreground leading-relaxed">
-                                    {ngo.about}
+                                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                    {ngo.description}
                                 </p>
                             </CardContent>
                         </Card>
 
                         {/* Child Spotlight */}
-                        <Card className="card-hover border-l-4 border-l-primary">
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <Heart className="h-5 w-5 text-primary" />
-                                    <span>Child Spotlight</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-start space-x-4">
-                                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
-                                        👦
+                        {childSpotlight && (
+                            <Card className="card-hover border-l-4 border-l-primary">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center space-x-2">
+                                        <Heart className="h-5 w-5 text-primary" />
+                                        <span>Child Spotlight</span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-start space-x-4">
+                                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl shrink-0">
+                                            👦
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-lg mb-1">
+                                                {childSpotlight.name}, Age{" "}
+                                                {childSpotlight.age}
+                                            </h3>
+                                            <p className="text-muted-foreground mb-2">
+                                                {childSpotlight.interests}
+                                            </p>
+                                            <p className="text-sm">
+                                                <strong>Current Need:</strong>{" "}
+                                                {childSpotlight.primaryNeeds}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold text-lg mb-1">
-                                            {ngo.childSpotlight.name}, Age{" "}
-                                            {ngo.childSpotlight.age}
-                                        </h3>
-                                        <p className="text-muted-foreground mb-2">
-                                            {ngo.childSpotlight.hobbies}
-                                        </p>
-                                        <p className="text-sm">
-                                            <strong>Current Need:</strong>{" "}
-                                            {ngo.childSpotlight.needs}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Key Information */}
                         <Card className="card-hover">
@@ -135,15 +166,15 @@ export default function NGODetail() {
                                             Founded
                                         </p>
                                         <p className="font-medium">
-                                            {ngo.founded}
+                                            {new Date(ngo.foundedDate).toLocaleDateString()}
                                         </p>
                                     </div>
                                     <div>
                                         <p className="text-sm text-muted-foreground">
-                                            Locations
+                                            Operating Locations
                                         </p>
                                         <p className="font-medium">
-                                            {ngo.locations}
+                                            {ngo.operatingLocations?.join(", ") || ngo.city}
                                         </p>
                                     </div>
                                     <div>
@@ -153,7 +184,7 @@ export default function NGODetail() {
                                         <div className="flex items-center space-x-1 mt-1">
                                             <CheckCircle className="h-4 w-4 text-success" />
                                             <span className="text-success font-medium">
-                                                {ngo.verified
+                                                {ngo.isVerified
                                                     ? "Verified"
                                                     : "Unverified"}
                                             </span>
@@ -164,29 +195,34 @@ export default function NGODetail() {
                         </Card>
 
                         {/* Impact Stats */}
-                        <Card className="card-hover">
-                            <CardHeader>
-                                <CardTitle>Our Impact So Far</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {Object.entries(ngo.impact).map(
-                                        ([key, value]) => (
-                                            <div
-                                                key={key}
-                                                className="text-center"
-                                            >
-                                                <StatCard
-                                                    icon="📊"
-                                                    value={value}
-                                                    label={formatLabel(key)}
-                                                />
-                                            </div>
-                                        )
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {ngo.impactMetrics && (
+                            <Card className="card-hover">
+                                <CardHeader>
+                                    <CardTitle>Our Impact So Far</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {Object.entries(ngo.impactMetrics).map(
+                                            ([key, value]) => {
+                                                if (key === "_id") return null;
+                                                return (
+                                                    <div
+                                                        key={key}
+                                                        className="text-center"
+                                                    >
+                                                        <StatCard
+                                                            icon="📊"
+                                                            value={String(value)}
+                                                            label={formatLabel(key)}
+                                                        />
+                                                    </div>
+                                                );
+                                            }
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
 
                     {/* Right Column: Donation Widget */}
@@ -208,7 +244,7 @@ export default function NGODetail() {
 
                                     <TabsContent
                                         value="goods"
-                                        className="space-y-4"
+                                        className="space-y-4 mt-4"
                                     >
                                         <div>
                                             <label className="text-sm font-medium mb-2 block">
@@ -264,7 +300,7 @@ export default function NGODetail() {
 
                                     <TabsContent
                                         value="money"
-                                        className="space-y-4"
+                                        className="space-y-4 mt-4"
                                     >
                                         <div>
                                             <label className="text-sm font-medium mb-2 block">

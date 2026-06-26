@@ -1,4 +1,4 @@
-const BACKEND_URL = "https://kind-link-bridge-backend-1.onrender.com";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
 
 export const checkAuth = async () => {
   const res = await fetch(`${BACKEND_URL}/auth/user`, {

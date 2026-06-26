@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-const BACKEND_URL = "https://kind-link-bridge-backend-1.onrender.com";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
 
 const NGOLogin: React.FC = () => {
     const [email, setEmail] = useState("");
@@ -21,7 +21,7 @@ const NGOLogin: React.FC = () => {
         // If there is a specific NGO login endpoint, it should be used here.
         // Given the requirement "successfully login", I'll stick to the standard login.
         try {
-            const response = await fetch(`${BACKEND_URL}/login`, {
+            const response = await fetch(`${BACKEND_URL}/api/auth/ngo-login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
@@ -35,7 +35,40 @@ const NGOLogin: React.FC = () => {
                 localStorage.setItem("user", JSON.stringify(ngoUser));
 
                 setMessage("✅ Login successful!");
-                // Redirect to NGO dashboard
+
+                try {
+                    // Fetch full NGO profile to populate dashboard
+                    const profileRes = await fetch(`${BACKEND_URL}/api/ngos/${data.id}`);
+                    if (profileRes.ok) {
+                        const profile = await profileRes.json();
+                        
+                        // Map backend schema to what NGODashboard expects
+                        const dashboardData = {
+                            orgName: profile.name,
+                            category: profile.category,
+                            about: profile.description,
+                            isVerified: profile.isVerified,
+                            hoursProvided: profile.impactMetrics?.hoursProvided || 0,
+                            childrenConnected: profile.impactMetrics?.childrenConnected || 0,
+                            schoolsConnected: profile.impactMetrics?.schoolsConnected || 0,
+                            officeAddress: profile.city,
+                            locations: profile.operatingLocations?.join(", ") || profile.city,
+                            children: profile.childrenInCare?.map((c: any) => ({
+                                name: c.name,
+                                age: c.age,
+                                interests: c.interests,
+                                currentNeeds: c.primaryNeeds
+                            })) || []
+                        };
+                        
+                        setTimeout(() => navigate("/ngo/dashboard", { state: dashboardData }), 1000);
+                        return;
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch NGO profile", err);
+                }
+
+                // Fallback if profile fetch fails
                 setTimeout(() => navigate("/ngo/dashboard"), 1000);
             } else {
                 setMessage(`❌ ${data.error || "Login failed"}`);

@@ -160,9 +160,55 @@ const NGORegister = () => {
     );
   };
 
-  const onSubmit = (data: FormData) => {
-    console.log("Form submitted:", data);
-    navigate("/ngo/dashboard", { state: data });
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      // Map data to match backend model
+      const payload = {
+        email: data.email,
+        password: data.password,
+        name: data.orgName,
+        tagline: data.tagline,
+        isVerified: data.isVerified,
+        verificationDocument: data.verificationDoc ? { fileUrl: data.verificationDoc, documentType: "uploaded" } : undefined,
+        city: data.location,
+        description: data.about,
+        childrenInCare: data.children.map(child => ({
+          name: child.name,
+          age: child.age,
+          interests: child.interests,
+          primaryNeeds: child.currentNeeds
+        })),
+        category: data.category,
+        operatingLocations: data.locations.split(',').map(l => l.trim()).filter(l => l),
+        foundedDate: data.foundedDate,
+        impactMetrics: {
+          childrenConnected: data.childrenConnected,
+          schoolsConnected: data.schoolsConnected,
+          hoursProvided: data.hoursProvided
+        }
+      };
+
+      const response = await fetch(`${BACKEND_URL}/api/auth/ngo-signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success("Registration successful!");
+        localStorage.setItem("user", JSON.stringify(result));
+        setTimeout(() => navigate("/ngo/dashboard", { state: data }), 1000);
+      } else {
+        toast.error(`Registration failed: ${result.error || "Unknown error"}`);
+      }
+    } catch (error) {
+      toast.error("Server connection failed");
+      console.error(error);
+    }
   };
 
   const handleCancel = () => navigate("/");

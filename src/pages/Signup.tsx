@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
-const BACKEND_URL = "https://kind-link-bridge-backend-1.onrender.com";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
 
 const Signup: React.FC = () => {
     const [username, setUsername] = useState("");
