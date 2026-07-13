@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://kind-link-bridge-backend-1.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
 
 export interface ChatMessage {
   role: "user" | "assistant";

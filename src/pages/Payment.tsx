@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, Lock, ShieldCheck, Heart, Building2, CreditCard, Smartphone } from "lucide-react";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
+
 export default function Payment() {
   const location = useLocation();
   const { ngo, amount: presetAmount } = (location.state as any) || {};
@@ -70,7 +72,7 @@ export default function Payment() {
       localStorage.setItem(`donations_${userId}`, JSON.stringify(localDonations));
 
       // Attempt to send donation to backend
-      await axios.post("https://kind-link-bridge-backend-1.onrender.com/donations", {
+      await axios.post(`${BACKEND_URL}/donations`, {
         user_id: userId,
         amount: numericAmount
       });

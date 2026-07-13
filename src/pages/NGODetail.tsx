@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,45 @@ export default function NGODetail() {
 
     const categories = ["Education", "Health", "Food", "Arts", "Shelter"];
     const presetAmounts = ["₹500", "₹1,000", "₹2,500", "₹5,000"];
+    const navigate = useNavigate();
+    const [userId, setUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            try {
+                const parsed = JSON.parse(storedUser);
+                setUserId(parsed.id);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }, []);
+
+    const handleArrangeDonation = () => {
+        if (!userId) {
+            toast.error("You must be logged in to arrange a donation");
+            navigate("/login");
+            return;
+        }
+        if (!selectedCategory || !donationItems.trim()) {
+            toast.error("Please select a category and specify the items");
+            return;
+        }
+
+        const localDonations = JSON.parse(localStorage.getItem(`donations_${userId}`) || '[]');
+        localDonations.push({
+            amount: 0,
+            ngoName: ngo.name || "Unknown NGO",
+            category: selectedCategory,
+            items: donationItems,
+            date: new Date().toISOString()
+        });
+        localStorage.setItem(`donations_${userId}`, JSON.stringify(localDonations));
+
+        toast.success("Goods donation pledge submitted successfully!");
+        navigate("/thank-you");
+    };
 
     useEffect(() => {
         const fetchNgo = async () => {
@@ -293,6 +332,7 @@ export default function NGODetail() {
                                             className="w-full"
                                             size="lg"
                                             variant="cta"
+                                            onClick={handleArrangeDonation}
                                         >
                                             Arrange Donation
                                         </Button>

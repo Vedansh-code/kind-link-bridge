@@ -1,5 +1,5 @@
 import { useLocation, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,20 +21,24 @@ import {
     Clock,
     TrendingUp,
     DollarSign,
-    Package
+    Package,
+    Loader2,
+    Phone
 } from "lucide-react";
 
-// Mock Data for Donations
-const MOCK_DONATION_REQUESTS = [
-    { id: 1, donor: "Amit Patel", item: "Textbooks (Grades 1-5)", quantity: "50 sets", status: "Pending", date: "2024-03-10" },
-    { id: 2, donor: "Sarah Jenkins", item: "Winter Blankets", quantity: "20 units", status: "Approved", date: "2024-03-08" },
-    { id: 3, donor: "Tech Corp Inc.", item: "Laptops", quantity: "5 units", status: "Completed", date: "2024-03-01" },
-];
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
 
 const NGODashboard = () => {
     const location = useLocation();
-    const data = location.state;
+    const [ngoData, setNgoData] = useState<any>(location.state || null);
     const [activeTab, setActiveTab] = useState("overview");
+
+    const [donations, setDonations] = useState<any[]>([]);
+    const [visits, setVisits] = useState<any[]>([]);
+    const [callbacks, setCallbacks] = useState<any[]>([]);
+    const [loadingDonations, setLoadingDonations] = useState(false);
+    const [loadingVisits, setLoadingVisits] = useState(false);
+    const [loadingCallbacks, setLoadingCallbacks] = useState(false);
 
     // State for Events (Client-side only)
     const [events, setEvents] = useState([
@@ -43,11 +47,82 @@ const NGODashboard = () => {
     ]);
     const [newEvent, setNewEvent] = useState({ title: "", date: "", location: "" });
 
-    // If no data is passed (direct access), redirect back to register
-    // In a real app, you'd fetch the NGO profile from the backend here.
-    if (!data) {
-        return <Navigate to="/ngo-register" replace />;
-    }
+    const fetchNgoProfile = async (ngoId: string) => {
+        try {
+            const profileRes = await fetch(`${BACKEND_URL}/api/ngos/${ngoId}`);
+            if (profileRes.ok) {
+                const profile = await profileRes.json();
+                const dashboardData = {
+                    id: profile._id || profile.id,
+                    orgName: profile.name,
+                    category: profile.category,
+                    about: profile.description,
+                    isVerified: profile.isVerified,
+                    hoursProvided: profile.impactMetrics?.hoursProvided || 0,
+                    childrenConnected: profile.impactMetrics?.childrenConnected || 0,
+                    schoolsConnected: profile.impactMetrics?.schoolsConnected || 0,
+                    officeAddress: profile.city,
+                    locations: profile.operatingLocations?.join(", ") || profile.city,
+                    children: profile.childrenInCare?.map((c: any) => ({
+                        name: c.name,
+                        age: c.age,
+                        interests: c.interests,
+                        currentNeeds: c.primaryNeeds
+                    })) || []
+                };
+                setNgoData(dashboardData);
+            }
+        } catch (err) {
+            console.error("Failed to fetch NGO profile", err);
+        }
+    };
+
+    const fetchNgoActions = async (ngoId: string) => {
+        setLoadingDonations(true);
+        setLoadingVisits(true);
+        setLoadingCallbacks(true);
+        try {
+            const donRes = await fetch(`${BACKEND_URL}/api/ngos/${ngoId}/donations`);
+            if (donRes.ok) setDonations(await donRes.json());
+        } catch (e) { console.error("Error fetching donations:", e); }
+        finally { setLoadingDonations(false); }
+
+        try {
+            const visRes = await fetch(`${BACKEND_URL}/api/ngos/${ngoId}/visits`);
+            if (visRes.ok) setVisits(await visRes.json());
+        } catch (e) { console.error("Error fetching visits:", e); }
+        finally { setLoadingVisits(false); }
+
+        try {
+            const cbRes = await fetch(`${BACKEND_URL}/api/ngos/${ngoId}/callbacks`);
+            if (cbRes.ok) setCallbacks(await cbRes.json());
+        } catch (e) { console.error("Error fetching callbacks:", e); }
+        finally { setLoadingCallbacks(false); }
+    };
+
+    useEffect(() => {
+        const stored = localStorage.getItem("user");
+        let ngoId = "";
+        if (location.state && (location.state.id || location.state._id)) {
+            ngoId = location.state.id || location.state._id;
+        } else if (stored) {
+            try {
+                const userObj = JSON.parse(stored);
+                if (userObj.role === 'ngo' && userObj.id) {
+                    ngoId = userObj.id;
+                    if (!ngoData) {
+                        fetchNgoProfile(ngoId);
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        if (ngoId) {
+            fetchNgoActions(ngoId);
+        }
+    }, [location.state]);
 
     const handleAddEvent = () => {
         if (newEvent.title && newEvent.date) {
@@ -55,6 +130,28 @@ const NGODashboard = () => {
             setNewEvent({ title: "", date: "", location: "" });
         }
     };
+
+    if (!ngoData) {
+        const stored = localStorage.getItem("user");
+        if (!stored) {
+            return <Navigate to="/ngo-register" replace />;
+        }
+        try {
+            const userObj = JSON.parse(stored);
+            if (userObj.role !== 'ngo') {
+                return <Navigate to="/ngo-register" replace />;
+            }
+        } catch (e) {
+            return <Navigate to="/ngo-register" replace />;
+        }
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+            </div>
+        );
+    }
+
+    const data = ngoData;
 
     return (
         <div className="min-h-screen bg-slate-50 relative flex flex-col">
@@ -88,7 +185,9 @@ const NGODashboard = () => {
                             {[
                                 { id: "overview", label: "Overview", icon: LayoutDashboard },
                                 { id: "donations", label: "Donations", icon: Heart },
-                                { id: "events", label: "Events", icon: Calendar },
+                                { id: "visits", label: "Visits", icon: Calendar },
+                                { id: "callbacks", label: "Callbacks", icon: Phone },
+                                { id: "events", label: "Events", icon: Clock },
                                 { id: "profile", label: "Profile Settings", icon: Settings },
                             ].map((item) => (
                                 <button
@@ -201,20 +300,115 @@ const NGODashboard = () => {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-4">
-                                            {MOCK_DONATION_REQUESTS.map((req) => (
-                                                <div key={req.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50 hover:bg-white transition-colors">
-                                                    <div className="space-y-1">
-                                                        <p className="font-semibold text-slate-900">{req.item}</p>
-                                                        <p className="text-sm text-slate-500">From: {req.donor} • {req.quantity}</p>
+                                            {loadingDonations ? (
+                                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                    <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                                                    Loading donations...
+                                                </p>
+                                            ) : donations.length === 0 ? (
+                                                <p className="text-sm text-muted-foreground">No donations received yet.</p>
+                                            ) : (
+                                                donations.map((req) => (
+                                                    <div key={req._id || req.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50 hover:bg-white transition-colors">
+                                                        <div className="space-y-1">
+                                                            <p className="font-semibold text-slate-900">{req.itemsDescription || "General Donation"}</p>
+                                                            <p className="text-sm text-slate-500">From: {req.userName || "Anonymous"} • Received on: {req.date ? new Date(req.date).toLocaleDateString() : "N/A"}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <Badge variant="default">
+                                                                Pledge
+                                                            </Badge>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-4">
-                                                        <Badge variant={req.status === 'Completed' ? 'default' : req.status === 'Approved' ? 'secondary' : 'outline'}>
-                                                            {req.status}
-                                                        </Badge>
-                                                        <Button size="sm" variant="ghost">Manage</Button>
+                                                ))
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* VISITS TAB */}
+                        {activeTab === "visits" && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-bold tracking-tight">Scheduled Visits</h2>
+                                </div>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Visitor Logs</CardTitle>
+                                        <CardDescription>View and manage visits scheduled by volunteers.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            {loadingVisits ? (
+                                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                    <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                                                    Loading visits...
+                                                </p>
+                                            ) : visits.length === 0 ? (
+                                                <p className="text-sm text-muted-foreground">No visits scheduled yet.</p>
+                                            ) : (
+                                                visits.map((req) => (
+                                                    <div key={req._id || req.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50 hover:bg-white transition-colors">
+                                                        <div className="space-y-1">
+                                                            <p className="font-semibold text-slate-900">Visit Scheduled</p>
+                                                            <p className="text-sm text-slate-500">Visitor: {req.userName || "Anonymous"} • Date: {req.date || "N/A"}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <Badge variant={req.status === 'Completed' ? 'default' : req.status === 'Approved' ? 'secondary' : 'outline'}>
+                                                                {req.status || 'Pending'}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                ))
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* CALLBACKS TAB */}
+                        {activeTab === "callbacks" && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-bold tracking-tight">Callback Requests</h2>
+                                </div>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Requested Callbacks</CardTitle>
+                                        <CardDescription>Contact request logs from interested donors.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            {loadingCallbacks ? (
+                                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                    <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                                                    Loading callbacks...
+                                                </p>
+                                            ) : callbacks.length === 0 ? (
+                                                <p className="text-sm text-muted-foreground">No callback requests yet.</p>
+                                            ) : (
+                                                callbacks.map((req) => (
+                                                    <div key={req._id || req.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50 hover:bg-white transition-colors">
+                                                        <div className="space-y-1">
+                                                            <p className="font-semibold text-slate-900">Callback Requested</p>
+                                                            <p className="text-sm text-slate-500">User: {req.userName || "Anonymous"} • Requested on: {req.date ? new Date(req.date).toLocaleString() : "N/A"}</p>
+                                                            {req.phoneNumber && (
+                                                                <p className="text-sm font-mono text-emerald-600">📞 {req.phoneNumber}</p>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <Badge variant="outline">
+                                                                Requested
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>

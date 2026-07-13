@@ -1,9 +1,10 @@
 import axios from "axios";
 
-const ML_BASE_URL = "http://127.0.0.1:8000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
 
 export interface RecommendationNGO {
   id: string;
+  _id?: string;
   name: string;
   category: string;
   description?: string;
@@ -20,6 +21,6 @@ export interface RecommendationNGO {
 }
 
 export const getRecommendations = async (userId: string | number): Promise<RecommendationNGO[]> => {
-  const response = await axios.get(`${ML_BASE_URL}/recommend/${userId}`);
+  const response = await axios.get(`${BACKEND_URL}/api/ngos/recommendations/${userId}`);
   return response.data;
 };

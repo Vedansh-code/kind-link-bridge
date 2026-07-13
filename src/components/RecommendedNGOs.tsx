@@ -149,7 +149,7 @@ export const RecommendedNGOs: React.FC<RecommendedNGOsProps> = ({
           {/* Mobile Layout: Horizontal Scroll */}
           <div className="flex md:hidden space-x-5 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory">
             {recommendations.map((ngo) => {
-              const ngoId = String(ngo.id);
+              const ngoId = String(ngo._id || ngo.id);
               const isFavorited = favorites.includes(ngoId);
               const score = ngo.match_score ?? ngo.score ?? ngo.matchScore;
               const locationText = ngo.location ?? ngo.locations ?? "India";
@@ -211,7 +211,7 @@ export const RecommendedNGOs: React.FC<RecommendedNGOsProps> = ({
           {/* Desktop Layout: Responsive Grid */}
           <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {recommendations.map((ngo) => {
-              const ngoId = String(ngo.id);
+              const ngoId = String(ngo._id || ngo.id);
               const isFavorited = favorites.includes(ngoId);
               const score = ngo.match_score ?? ngo.score ?? ngo.matchScore;
               const locationText = ngo.location ?? ngo.locations ?? "India";
