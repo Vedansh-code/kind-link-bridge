@@ -21,7 +21,6 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
-import { checkAuth } from "../lib/auth";
 
 // 🔑 API Base URL (local vs deployed)
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
@@ -36,366 +35,234 @@ const getIconForCategory = (category: string) => {
 };
 
 export default function Dashboard() {
-    const [username, setUsername] = useState(() => {
-        try {
-            const stored = localStorage.getItem("user");
-            if (stored) return JSON.parse(stored).username || "User";
-        } catch (e) {}
-        return "User";
-    });
-    const [donations, setDonations] = useState(0);
-    const [hours, setHours] = useState(0);
-    const [causes, setCauses] = useState<string[]>([]);
-    const [monthlyData, setMonthlyData] = useState<any[]>([]);
-    const [categoryData, setCategoryData] = useState<any[]>([]);
-    const [socket, setSocket] = useState<Socket | null>(null);
-    const [userId, setUserId] = useState<number | null>(null);
-    const [isProfileComplete, setIsProfileComplete] = useState(true);
+  const [username, setUsername] = useState("User");
+  const [donations, setDonations] = useState(0);
+  const [hours, setHours] = useState(0);
+  const [causes, setCauses] = useState<string[]>([]);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
 
-    const [donationsList, setDonationsList] = useState<any[]>([]);
-    const [eventsList, setEventsList] = useState<any[]>([]);
-    const [causesList, setCausesList] = useState<any[]>([]);
+  const fetchDashboard = async (id: number) => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/dashboard/${id}`);
+      setDonations(res.data.total_donations || 0);
+      setHours(res.data.total_hours || 0);
+      setCauses(res.data.causes || []);
+      setMonthlyData(res.data.monthly || []);
+      setCategoryData(res.data.categories || []);
+    } catch (err) {
+      console.error("Error fetching dashboard:", err);
+    }
+  };
 
-    const [showDonationsModal, setShowDonationsModal] = useState(false);
-    const [showCausesModal, setShowCausesModal] = useState(false);
-    const [showVolunteerModal, setShowVolunteerModal] = useState(false);
-    const [dbNgos, setDbNgos] = useState<any[]>([]);
+  useEffect(() => {
+    const initializeDashboard = async () => {
+      try {
+        // Ask backend to verify who is logged in via cookie
+        const realUser = await checkAuth();
 
-    useEffect(() => {
-        const fetchNgos = async () => {
-            try {
-                const res = await axios.get(`${API_BASE_URL}/api/ngos`);
-                setDbNgos(res.data);
-            } catch (err) {
-                console.error("Failed to load NGOs from server", err);
-            }
-        };
-        fetchNgos();
-    }, []);
+        if (realUser && !realUser.error) {
+          const userData = {
+            id: realUser._id || realUser.id,
+            username: realUser.username,
+            email: realUser.email
+          };
+          localStorage.setItem("user", JSON.stringify(userData));
 
-    const fetchDashboard = async (id: number) => {
-        try {
-            // First, calculate local stats from mock donations
-            const localDonations = JSON.parse(localStorage.getItem(`donations_${id}`) || '[]');
-            let localTotal = 0;
-            const causesSet = new Set<string>();
-            const monthlyMap = new Map<string, number>();
-            const categoryMap = new Map<string, number>();
-            const causesMap = new Map();
+          setUserId(userData.id);
+          if (userData.username) setUsername(userData.username);
+          fetchDashboard(userData.id);
 
-            // Always add a baseline so chart isn't empty
-            monthlyMap.set("Jan", 0);
-            monthlyMap.set("Feb", 0);
-            monthlyMap.set("Mar", 0);
-            monthlyMap.set("Apr", 0);
+          const profileData = localStorage.getItem(`profile_${userData.id}`);
+          if (!profileData) {
+            setIsProfileComplete(false);
+          }
 
-            localDonations.forEach((d: any) => {
-                localTotal += d.amount;
-                if (d.ngoName) {
-                    causesSet.add(d.ngoName);
-                    if (!causesMap.has(d.ngoName)) causesMap.set(d.ngoName, { name: d.ngoName, date: d.date, type: "Donation" });
-                }
-                
-                const date = new Date(d.date);
-                const month = date.toLocaleString('default', { month: 'short' });
-                monthlyMap.set(month, (monthlyMap.get(month) || 0) + d.amount);
+          const newSocket = io(API_BASE_URL);
+          setSocket(newSocket);
 
-                categoryMap.set(d.category, (categoryMap.get(d.category) || 0) + d.amount);
-            });
-
-            // Try backend fetch, merge if successful, otherwise fallback entirely
-            let backendDonations = 0;
-            let backendHours = 0;
-            let backendCauses: string[] = [];
-            let backendMonthly: any[] = [];
-            let backendCategories: any[] = [];
-
-            try {
-                const res = await axios.get(`${API_BASE_URL}/dashboard/${id}`);
-                backendDonations = res.data.total_donations || 0;
-                backendHours = res.data.total_hours || 0;
-                backendCauses = res.data.causes || [];
-                backendMonthly = res.data.monthly || [];
-                backendCategories = res.data.categories || [];
-            } catch (err) {
-                console.log("Backend not reachable, using local data only.");
-            }
-
-            const localEvents = JSON.parse(localStorage.getItem(`events_${id}`) || "[]");
-            let localHours = 0;
-            localEvents.forEach((e: any) => {
-               localHours += (e.hours || 0);
-               if (e.ngoName) {
-                   causesSet.add(e.ngoName);
-                   if (!causesMap.has(e.ngoName)) causesMap.set(e.ngoName, { name: e.ngoName, date: e.date, type: "Volunteer" });
-               }
-            });
-
-            // Merge local and backend
-            const combinedDonations = Math.max(localTotal, backendDonations);
-            const combinedHours = Math.max(localHours, backendHours);
-            
-            const finalCauses = Array.from(new Set([...backendCauses, ...Array.from(causesSet)]));
-
-            // Merge monthly
-            backendMonthly.forEach((item: any) => {
-                monthlyMap.set(item.month, Math.max(item.amount, monthlyMap.get(item.month) || 0));
-            });
-            const mergedMonthly = Array.from(monthlyMap.entries()).map(([month, amount]) => ({ month, amount }));
-
-            // Merge categories
-            backendCategories.forEach((item: any) => {
-                categoryMap.set(item.name, Math.max(item.value, categoryMap.get(item.name) || 0));
-            });
-            const mergedCategories: any[] = [];
-            const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#FF69B4", "#48D1CC", "#FFD700"];
-            let i = 0;
-            for (let [name, value] of categoryMap.entries()) {
-                mergedCategories.push({ name, value, color: colors[i % colors.length] });
-                i++;
-            }
-
-            setDonations(combinedDonations);
-            setHours(combinedHours);
-            setCauses(finalCauses);
-            setMonthlyData(mergedMonthly.length ? mergedMonthly : [{ month: "-", amount: 0 }]);
-            setCategoryData(mergedCategories.length ? mergedCategories : [{ name: "None", value: 100, color: "#ccc" }]);
-
-            setDonationsList(localDonations.reverse());
-            setEventsList(localEvents.reverse());
-            setCausesList(Array.from(causesMap.values()));
-
-        } catch (err) {
-            console.error("Critical error building dashboard:", err);
+          newSocket.on(`donation-update-${userData.id}`, () => {
+            fetchDashboard(userData.id);
+          });
         }
+      } catch (err) {
+        console.error("Not authenticated", err);
+      }
     };
 
-    useEffect(() => {
-        const initializeDashboard = async () => {
-            try {
-                // Ask backend to verify who is logged in via cookie
-                const realUser = await checkAuth();
-                
-                if (realUser && !realUser.error) {
-                    const userData = {
-                        id: realUser._id || realUser.id,
-                        username: realUser.username,
-                        email: realUser.email
-                    };
-                    localStorage.setItem("user", JSON.stringify(userData));
+    initializeDashboard();
 
-                    setUserId(userData.id);
-                    setUsername(userData.username);
-                    fetchDashboard(userData.id);
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
 
-                    const profileData = localStorage.getItem(`profile_${userData.id}`);
-                    if (!profileData) {
-                        setIsProfileComplete(false);
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation variant="dashboard" />
+
+      <main className="container mx-auto p-6">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, {username}!</h1>
+          <p className="text-muted-foreground">Here's your impact summary and new opportunities to help.</p>
+        </div>
+
+        {/* Key Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="card-hover cursor-pointer" onClick={() => setShowDonationsModal(true)}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Donations
+              </CardTitle>
+              <Heart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">
+                ₹{donations}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Your lifetime contributions (Click to view)
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="card-hover cursor-pointer" onClick={() => setShowCausesModal(true)}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Causes Supported
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">
+                {causes.length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {causes.length} causes (Click to view)
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="card-hover cursor-pointer" onClick={() => setShowVolunteerModal(true)}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Volunteer Hours
+              </CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">
+                {hours} Hours
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This quarter (Click to view)
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card className="card-hover">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <span>Monthly Contributions</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={
+                    monthlyData.length
+                      ? monthlyData
+                      : [{ month: "-", amount: 0 }]
+                  }
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value) => [
+                      `₹${value}`,
+                      "Amount",
+                    ]}
+                  />
+                  <Bar
+                    dataKey="amount"
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="card-hover">
+            <CardHeader>
+              <CardTitle>Donation Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={
+                      categoryData.length
+                        ? categoryData
+                        : [
+                          {
+                            name: "None",
+                            value: 100,
+                            color: "#ccc",
+                          },
+                        ]
                     }
-
-                    const newSocket = io(API_BASE_URL);
-                    setSocket(newSocket);
-
-                    newSocket.on(`donation-update-${userData.id}`, () => {
-                        fetchDashboard(userData.id);
-                    });
-                }
-            } catch (err) {
-                console.error("Not authenticated", err);
-            }
-        };
-
-        initializeDashboard();
-
-        return () => {
-            if (socket) socket.disconnect();
-        };
-    }, []);
-
-    const totalCategoryValue = categoryData.reduce((acc, curr) => acc + curr.value, 0);
-
-    return (
-        <div className="min-h-screen bg-background">
-            <Navigation variant="dashboard" />
-
-            <main className="container mx-auto p-6">
-                {/* Welcome Section */}
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-foreground mb-2">
-                        Welcome back, {username}!
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Here's your impact summary and new opportunities to
-                        help.
-                    </p>
-                </div>
-
-                {!isProfileComplete && (
-                    <Alert className="mb-8 bg-primary/5 border-primary/20">
-                        <Info className="h-4 w-4 text-primary" />
-                        <AlertTitle>Complete your profile</AlertTitle>
-                        <AlertDescription className="mt-2 flex items-center justify-between">
-                            <span>Help us match you with the best causes by telling us your preferences.</span>
-                            <Button asChild size="sm" variant="outline" className="ml-4 border-primary/20 hover:bg-primary/10 hover:text-primary">
-                                <Link to="/profile">Complete Profile</Link>
-                            </Button>
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {/* Key Statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <Card className="card-hover cursor-pointer" onClick={() => setShowDonationsModal(true)}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Total Donations
-                            </CardTitle>
-                            <Heart className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-primary">
-                                ₹{donations}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Your lifetime contributions (Click to view)
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="card-hover cursor-pointer" onClick={() => setShowCausesModal(true)}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Causes Supported
-                            </CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-primary">
-                                {causes.length}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                {causes.length} causes (Click to view)
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="card-hover cursor-pointer" onClick={() => setShowVolunteerModal(true)}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Volunteer Hours
-                            </CardTitle>
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-primary">
-                                {hours} Hours
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                This quarter (Click to view)
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Charts Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <Card className="card-hover">
-                        <CardHeader>
-                            <CardTitle className="flex items-center space-x-2">
-                                <TrendingUp className="h-5 w-5 text-primary" />
-                                <span>Monthly Contributions</span>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart
-                                    data={
-                                        monthlyData.length
-                                            ? monthlyData
-                                            : [{ month: "-", amount: 0 }]
-                                    }
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis />
-                                    <Tooltip
-                                        formatter={(value) => [
-                                            `₹${value}`,
-                                            "Amount",
-                                        ]}
-                                    />
-                                    <Bar
-                                        dataKey="amount"
-                                        fill="hsl(var(--primary))"
-                                        radius={[4, 4, 0, 0]}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="card-hover">
-                        <CardHeader>
-                            <CardTitle>Donation Categories</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie
-                                        data={
-                                            categoryData.length
-                                                ? categoryData
-                                                : [
-                                                      {
-                                                          name: "None",
-                                                          value: 100,
-                                                          color: "#ccc",
-                                                      },
-                                                  ]
-                                        }
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={100}
-                                        fill="hsl(var(--primary))"
-                                    >
-                                        {categoryData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={entry.color || "#8884d8"}
-                                            />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        formatter={(value: any) => {
-                                            const perc = totalCategoryValue > 0 ? ((parseFloat(value) / totalCategoryValue) * 100).toFixed(1) : 0;
-                                            return [`${perc}% (₹${value})`, "Share"];
-                                        }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            <div className="flex flex-wrap gap-4 mt-4">
-                                {categoryData.map((item, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-center space-x-2"
-                                    >
-                                        <div
-                                            className="w-3 h-3 rounded-full"
-                                            style={{
-                                                backgroundColor: item.color,
-                                            }}
-                                        ></div>
-                                        <span className="text-sm text-muted-foreground">
-                                            {item.name}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="hsl(var(--primary))"
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color || "#8884d8"}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: any) => {
+                      const perc = totalCategoryValue > 0 ? ((parseFloat(value) / totalCategoryValue) * 100).toFixed(1) : 0;
+                      return [`${perc}% (₹${value})`, "Share"];
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap gap-4 mt-4">
+                {categoryData.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center space-x-2"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{
+                        backgroundColor: item.color,
+                      }}
+                    ></div>
+                    <span className="text-sm text-muted-foreground">
+                      {item.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Featured Causes */}
         <Card className="card-hover">
@@ -441,72 +308,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </main>
-
-      {/* Modals */}
-      <Dialog open={showDonationsModal} onOpenChange={setShowDonationsModal}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto w-[90vw] max-w-md">
-          <DialogHeader>
-            <DialogTitle>Recent Donations</DialogTitle>
-            <DialogDescription>Your last 15 recorded transactions.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            {donationsList.slice(0, 15).length === 0 && <p className="text-muted-foreground text-sm">No donations found.</p>}
-            {donationsList.slice(0, 15).map((d, i) => (
-              <div key={i} className="flex justify-between items-center p-3 border rounded-lg bg-card/50">
-                <div>
-                  <p className="font-semibold text-sm">{d.ngoName}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(d.date).toLocaleDateString()}</p>
-                </div>
-                <div className="font-bold text-primary">₹{d.amount}</div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showCausesModal} onOpenChange={setShowCausesModal}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto w-[90vw] max-w-md">
-          <DialogHeader>
-            <DialogTitle>Causes Supported</DialogTitle>
-            <DialogDescription>Organizations you've helped or volunteered at.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            {causesList.length === 0 && <p className="text-muted-foreground text-sm">No causes found.</p>}
-            {causesList.map((c, i) => (
-              <div key={i} className="flex justify-between items-center p-3 border rounded-lg bg-card/50">
-                <div>
-                  <p className="font-semibold text-sm">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">Since {new Date(c.date).toLocaleDateString()}</p>
-                </div>
-                <div className="text-xs bg-muted px-2 py-1 rounded">{c.type}</div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showVolunteerModal} onOpenChange={setShowVolunteerModal}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto w-[90vw] max-w-md">
-          <DialogHeader>
-            <DialogTitle>Volunteer Events</DialogTitle>
-            <DialogDescription>Your scheduled volunteer sessions.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            {eventsList.length === 0 && <p className="text-muted-foreground text-sm">No events found.</p>}
-            {eventsList.map((e, i) => (
-              <div key={i} className="flex justify-between items-center p-3 border rounded-lg bg-card/50">
-                <div>
-                  <p className="font-semibold text-sm">{e.ngoName}</p>
-                  <p className="text-xs font-medium">{e.eventType || "Event"} - {e.timeSlot}</p>
-                  <p className="text-xs text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString() : 'No date'}</p>
-                </div>
-                <div className="font-bold text-primary">{e.hours} Hours</div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
     </div>
   );
 }

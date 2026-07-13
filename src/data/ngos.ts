@@ -1,4 +1,25 @@
-export const ngos = [
+export interface NGO {
+  id: string;
+  name: string;
+  tagline: string;
+  verified: boolean;
+  locations: string;
+  category: string;
+  founded: string;
+  impact: Record<string, string>;
+  childSpotlight: {
+    name: string;
+    age: number;
+    hobbies: string;
+    needs: string;
+  };
+  about: string;
+  image?: string;
+  emoji?: string;
+  icon?: string;
+}
+
+export const ngos: NGO[] = [
   {
     id: "1",
     name: "Hope Foundation",
@@ -20,6 +41,7 @@ export const ngos = [
     },
     about:
       "Hope Foundation has been dedicated to transforming communities through education since 2015. We believe that every child deserves access to quality education, regardless of their economic background. Our programs focus on providing educational resources, building schools, and training teachers in underserved communities across India.",
+    image: "🎓",
   },
   {
     id: "2",
@@ -42,6 +64,7 @@ export const ngos = [
     },
     about:
       "Helping Hands NGO works to uplift underprivileged communities by providing access to basic education, healthcare, and skill-building programs.",
+    image: "🏥",
   },
   {
     id: "3",
@@ -64,6 +87,7 @@ export const ngos = [
     },
     about:
       "Green Future Initiative works to promote environmental sustainability by empowering local communities to take part in eco-friendly practices. From tree plantations to clean energy programs, we focus on creating greener, healthier living spaces.",
+    image: "🌱",
   },
   {
     id: "4",
@@ -86,6 +110,7 @@ export const ngos = [
     },
     about:
       "Smile Care Trust has been at the forefront of providing healthcare and nutrition support to children living in urban slums. Through our health camps, awareness drives, and school meal programs, we aim to reduce malnutrition and improve child health.",
+    image: "🍎",
   },
   {
     id: "5",
@@ -108,6 +133,7 @@ export const ngos = [
     },
     about:
       "Safe Shelter Foundation focuses on creating secure living conditions for children without families. By building shelters, providing education, and ensuring a nurturing environment, we aim to give every child a safe and dignified life.",
+    image: "🏠",
   },
   {
     id: "6",
@@ -130,5 +156,6 @@ export const ngos = [
     },
     about:
       "Art for Smiles is dedicated to nurturing creative talents in children from marginalized communities. Through art, music, and theater, we aim to boost their confidence, provide opportunities, and open doors to brighter futures.",
+    image: "🎨",
   },
 ];
