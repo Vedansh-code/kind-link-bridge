@@ -19,8 +19,14 @@ import { Heart, Users, Clock, TrendingUp, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
+import { RecommendedNGOs } from "@/components/RecommendedNGOs";
+import { ChatbotWidget } from "@/components/ChatbotWidget";
+import { getFavorites, addFavorite, removeFavorite } from "@/services/favoritesApi";
+import { ngos } from "@/data/ngos";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { checkAuth } from "../lib/auth";
 
 // 🔑 API Base URL (local vs deployed)
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://kind-link-bridge-backend-1.onrender.com";
@@ -35,7 +41,13 @@ const getIconForCategory = (category: string) => {
 };
 
 export default function Dashboard() {
-  const [username, setUsername] = useState("User");
+  const [username, setUsername] = useState(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) return JSON.parse(stored).username || "User";
+    } catch (e) {}
+    return "User";
+  });
   const [donations, setDonations] = useState(0);
   const [hours, setHours] = useState(0);
   const [causes, setCauses] = useState<string[]>([]);
@@ -43,21 +55,166 @@ export default function Dashboard() {
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
+  const [isProfileComplete, setIsProfileComplete] = useState(true);
+
+  // Favorites state
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState<boolean>(true);
+  const [favoritesError, setFavoritesError] = useState<boolean>(false);
+
+  // Lists for modals
+  const [donationsList, setDonationsList] = useState<any[]>([]);
+  const [eventsList, setEventsList] = useState<any[]>([]);
+  const [causesList, setCausesList] = useState<any[]>([]);
+
+  // Modals visibility state
+  const [showDonationsModal, setShowDonationsModal] = useState(false);
+  const [showCausesModal, setShowCausesModal] = useState(false);
+  const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+  const [dbNgos, setDbNgos] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchNgos = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/ngos`);
+        setDbNgos(res.data);
+      } catch (err) {
+        console.error("Failed to load NGOs from server", err);
+      }
+    };
+    fetchNgos();
+  }, []);
 
   const fetchDashboard = async (id: number) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/dashboard/${id}`);
-      setDonations(res.data.total_donations || 0);
-      setHours(res.data.total_hours || 0);
-      setCauses(res.data.causes || []);
-      setMonthlyData(res.data.monthly || []);
-      setCategoryData(res.data.categories || []);
+      // First, calculate local stats from mock donations
+      const localDonations = JSON.parse(localStorage.getItem(`donations_${id}`) || '[]');
+      let localTotal = 0;
+      const causesSet = new Set<string>();
+      const monthlyMap = new Map<string, number>();
+      const categoryMap = new Map<string, number>();
+      const causesMap = new Map();
+
+      // Always add a baseline so chart isn't empty
+      monthlyMap.set("Jan", 0);
+      monthlyMap.set("Feb", 0);
+      monthlyMap.set("Mar", 0);
+      monthlyMap.set("Apr", 0);
+
+      localDonations.forEach((d: any) => {
+        localTotal += d.amount;
+        if (d.ngoName) {
+          causesSet.add(d.ngoName);
+          if (!causesMap.has(d.ngoName)) causesMap.set(d.ngoName, { name: d.ngoName, date: d.date, type: "Donation" });
+        }
+        
+        const date = new Date(d.date);
+        const month = date.toLocaleString('default', { month: 'short' });
+        monthlyMap.set(month, (monthlyMap.get(month) || 0) + d.amount);
+
+        categoryMap.set(d.category, (categoryMap.get(d.category) || 0) + d.amount);
+      });
+
+      // Try backend fetch, merge if successful, otherwise fallback entirely
+      let backendDonations = 0;
+      let backendHours = 0;
+      let backendCauses: string[] = [];
+      let backendMonthly: any[] = [];
+      let backendCategories: any[] = [];
+
+      try {
+        const res = await axios.get(`${API_BASE_URL}/dashboard/${id}`);
+        backendDonations = res.data.total_donations || 0;
+        backendHours = res.data.total_hours || 0;
+        backendCauses = res.data.causes || [];
+        backendMonthly = res.data.monthly || [];
+        backendCategories = res.data.categories || [];
+      } catch (err) {
+        console.log("Backend not reachable, using local data only.");
+      }
+
+      const localEvents = JSON.parse(localStorage.getItem(`events_${id}`) || "[]");
+      let localHours = 0;
+      localEvents.forEach((e: any) => {
+        localHours += (e.hours || 0);
+        if (e.ngoName) {
+          causesSet.add(e.ngoName);
+          if (!causesMap.has(e.ngoName)) causesMap.set(e.ngoName, { name: e.ngoName, date: e.date, type: "Volunteer" });
+        }
+      });
+
+      // Merge local and backend
+      const combinedDonations = Math.max(localTotal, backendDonations);
+      const combinedHours = Math.max(localHours, backendHours);
+      
+      const finalCauses = Array.from(new Set([...backendCauses, ...Array.from(causesSet)]));
+
+      // Merge monthly
+      backendMonthly.forEach((item: any) => {
+        monthlyMap.set(item.month, Math.max(item.amount, monthlyMap.get(item.month) || 0));
+      });
+      const mergedMonthly = Array.from(monthlyMap.entries()).map(([month, amount]) => ({ month, amount }));
+
+      // Merge categories
+      backendCategories.forEach((item: any) => {
+        categoryMap.set(item.name, Math.max(item.value, categoryMap.get(item.name) || 0));
+      });
+      const mergedCategories: any[] = [];
+      const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#FF69B4", "#48D1CC", "#FFD700"];
+      let i = 0;
+      for (let [name, value] of categoryMap.entries()) {
+        mergedCategories.push({ name, value, color: colors[i % colors.length] });
+        i++;
+      }
+
+      setDonations(combinedDonations);
+      setHours(combinedHours);
+      setCauses(finalCauses);
+      setMonthlyData(mergedMonthly.length ? mergedMonthly : [{ month: "-", amount: 0 }]);
+      setCategoryData(mergedCategories.length ? mergedCategories : [{ name: "None", value: 100, color: "#ccc" }]);
+
+      setDonationsList(localDonations.reverse());
+      setEventsList(localEvents.reverse());
+      setCausesList(Array.from(causesMap.values()));
+
     } catch (err) {
-      console.error("Error fetching dashboard:", err);
+      console.error("Critical error building dashboard:", err);
+    }
+  };
+
+  const fetchUserFavorites = async (uid: number | string) => {
+    try {
+      setFavoritesLoading(true);
+      setFavoritesError(false);
+      const favIds = await getFavorites(uid);
+      setFavorites(Array.isArray(favIds) ? favIds.map(String) : []);
+    } catch (err) {
+      console.error("Error fetching favorites:", err);
+      setFavoritesError(true);
+    } finally {
+      setFavoritesLoading(false);
+    }
+  };
+
+  const handleToggleFavorite = async (ngoId: string) => {
+    if (!userId) return;
+    const isFav = favorites.includes(ngoId);
+    try {
+      if (isFav) {
+        await removeFavorite(userId, ngoId);
+        setFavorites((prev) => prev.filter((id) => id !== ngoId));
+      } else {
+        await addFavorite(userId, ngoId);
+        setFavorites((prev) => [...prev, ngoId]);
+      }
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
+      throw err;
     }
   };
 
   useEffect(() => {
+    let activeSocket: Socket | null = null;
     const initializeDashboard = async () => {
       try {
         // Ask backend to verify who is logged in via cookie
@@ -67,13 +224,21 @@ export default function Dashboard() {
           const userData = {
             id: realUser._id || realUser.id,
             username: realUser.username,
-            email: realUser.email
+            email: realUser.email,
+            role: realUser.role
           };
           localStorage.setItem("user", JSON.stringify(userData));
 
+          // Redirect NGO users to their dashboard
+          if (userData.role === 'ngo') {
+            window.location.hash = '/ngo/dashboard';
+            return;
+          }
+
           setUserId(userData.id);
-          if (userData.username) setUsername(userData.username);
+          setUsername(userData.username);
           fetchDashboard(userData.id);
+          fetchUserFavorites(userData.id);
 
           const profileData = localStorage.getItem(`profile_${userData.id}`);
           if (!profileData) {
@@ -82,6 +247,7 @@ export default function Dashboard() {
 
           const newSocket = io(API_BASE_URL);
           setSocket(newSocket);
+          activeSocket = newSocket;
 
           newSocket.on(`donation-update-${userData.id}`, () => {
             fetchDashboard(userData.id);
@@ -95,19 +261,117 @@ export default function Dashboard() {
     initializeDashboard();
 
     return () => {
-      newSocket.disconnect();
+      if (activeSocket) {
+        activeSocket.disconnect();
+      }
     };
   }, []);
 
+  // Monitor user change in localStorage
+  useEffect(() => {
+    const checkUser = () => {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          if (userData.id !== userId) {
+            setUserId(userData.id);
+            if (userData.username) setUsername(userData.username);
+            fetchDashboard(userData.id);
+            fetchUserFavorites(userData.id);
+          }
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener("storage", checkUser);
+    return () => window.removeEventListener("storage", checkUser);
+  }, [userId]);
+
+  const totalCategoryValue = categoryData.reduce((acc, curr) => acc + (curr.value || 0), 0);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <Navigation variant="dashboard" />
 
       <main className="container mx-auto p-6">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, {username}!</h1>
-          <p className="text-muted-foreground">Here's your impact summary and new opportunities to help.</p>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Welcome back, {username}!
+          </h1>
+          <p className="text-muted-foreground">
+            Here's your impact summary and new opportunities to help.
+          </p>
+        </div>
+
+        {!isProfileComplete && (
+          <Alert className="mb-8 bg-primary/5 border-primary/20">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertTitle>Complete your profile</AlertTitle>
+            <AlertDescription className="mt-2 flex items-center justify-between">
+              <span>Help us match you with the best causes by telling us your preferences.</span>
+              <Button asChild size="sm" variant="outline" className="ml-4 border-primary/20 hover:bg-primary/10 hover:text-primary">
+                <Link to="/profile">Complete Profile</Link>
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* AI Recommendations Section */}
+        <RecommendedNGOs
+          userId={userId}
+          favorites={favorites}
+          onToggleFavorite={handleToggleFavorite}
+        />
+
+        {/* Favorite NGOs Section */}
+        <div className="mb-10 w-full">
+          <div className="flex items-center space-x-2 mb-5">
+            <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">My Favorite NGOs</h2>
+          </div>
+          {favoritesLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2].map((n) => (
+                <Skeleton key={n} className="h-28 w-full rounded-2xl" />
+              ))}
+            </div>
+          ) : favoritesError ? (
+            <Card className="border border-red-200/50 bg-red-50/10 p-5 rounded-2xl">
+              <p className="text-sm text-red-500/80">Failed to load favorite NGOs. Please try again later.</p>
+            </Card>
+          ) : favorites.length === 0 ? (
+            <Card className="border border-dashed border-border/80 bg-accent/20 p-6 text-center rounded-2xl">
+              <p className="text-sm text-muted-foreground">You haven't saved any favorites yet. Heart an NGO to save it here!</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {favorites.map((ngoId) => {
+                const ngo = ngos.find((n) => String(n.id) === ngoId);
+                if (!ngo) return null;
+                return (
+                  <Card key={ngoId} className="border border-border/80 bg-card/60 backdrop-blur rounded-2xl overflow-hidden hover:shadow-md transition-all duration-300 p-4 flex items-center justify-between group">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-3xl p-2 bg-primary/10 rounded-xl">{ngo.image || ngo.emoji || ngo.icon || "🏢"}</div>
+                      <div>
+                        <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1">{ngo.name}</h3>
+                        <Badge variant="secondary" className="text-[10px] py-0 px-2 mt-1">{ngo.category}</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button asChild size="sm" variant="ghost" className="h-8 px-2 text-xs">
+                        <Link to={`/ngo/${ngoId}`}>View</Link>
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleToggleFavorite(ngoId)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
+                        <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Key Statistics */}
@@ -308,6 +572,73 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Modals */}
+      <Dialog open={showDonationsModal} onOpenChange={setShowDonationsModal}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto w-[90vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recent Donations</DialogTitle>
+            <DialogDescription>Your last 15 recorded transactions.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {donationsList.slice(0, 15).length === 0 && <p className="text-muted-foreground text-sm">No donations found.</p>}
+            {donationsList.slice(0, 15).map((d, i) => (
+              <div key={i} className="flex justify-between items-center p-3 border rounded-lg bg-card/50">
+                <div>
+                  <p className="font-semibold text-sm">{d.ngoName}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(d.date).toLocaleDateString()}</p>
+                </div>
+                <div className="font-bold text-primary">₹{d.amount}</div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCausesModal} onOpenChange={setShowCausesModal}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto w-[90vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>Causes Supported</DialogTitle>
+            <DialogDescription>Organizations you've helped or volunteered at.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {causesList.length === 0 && <p className="text-muted-foreground text-sm">No causes found.</p>}
+            {causesList.map((c, i) => (
+              <div key={i} className="flex justify-between items-center p-3 border rounded-lg bg-card/50">
+                <div>
+                  <p className="font-semibold text-sm">{c.name}</p>
+                  <p className="text-xs text-muted-foreground">Since {new Date(c.date).toLocaleDateString()}</p>
+                </div>
+                <div className="text-xs bg-muted px-2 py-1 rounded">{c.type}</div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showVolunteerModal} onOpenChange={setShowVolunteerModal}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto w-[90vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>Volunteer Events</DialogTitle>
+            <DialogDescription>Your scheduled volunteer sessions.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {eventsList.length === 0 && <p className="text-muted-foreground text-sm">No events found.</p>}
+            {eventsList.map((e, i) => (
+              <div key={i} className="flex justify-between items-center p-3 border rounded-lg bg-card/50">
+                <div>
+                  <p className="font-semibold text-sm">{e.ngoName}</p>
+                  <p className="text-xs font-medium">{e.eventType || "Event"} - {e.timeSlot}</p>
+                  <p className="text-xs text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString() : 'No date'}</p>
+                </div>
+                <div className="font-bold text-primary">{e.hours} Hours</div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ChatbotWidget />
     </div>
   );
 }
